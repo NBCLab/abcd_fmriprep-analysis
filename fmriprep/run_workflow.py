@@ -38,7 +38,7 @@ def main(argv=None):
     for pid in participant_ids:
 
         if not op.isdir(op.join(bids_dir, 'derivatives', 'fmriprep-20.2.1', 'fmriprep', pid)):
-            cmd = 'python3 /home/data/abcd/code/abcd_fmriprep/workflow.py \
+            cmd = 'python3 /home/data/abcd/code/abcd_fmriprep-analysis/fmriprep/workflow.py \
                            --bids_dir {bids_dir} \
                            --work_dir {work_dir} \
                            --config {config_file} \
@@ -60,7 +60,6 @@ def main(argv=None):
                 getJobsN =  subprocess.Popen("squeue -u $USER | wc -l", shell=True, stdout=subprocess.PIPE).stdout
                 JobsN =  getJobsN.read()
             os.system(cmd)
-            exit()
 
 if __name__ == '__main__':
     main()

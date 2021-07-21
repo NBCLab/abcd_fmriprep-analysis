@@ -6,9 +6,9 @@ module add fsl-6.0.4
 module load matlab-2018b
  
 # Set up project-specific python environment
-source activate /home/data/abcd/code/env/abcd
+source activate /home/data/abcd/code/abcd_fmriprep-analysis/env/abcd
 
 # Set Python path to project-specific folder
-PYTHONPATH="${PYTHONPATH}:/home/data/abcd/code/env"
+PYTHONPATH="${PYTHONPATH}:/home/data/abcd/code/abcd_fmriprep-analysis/env"
 
 export project_name="[abcd]"

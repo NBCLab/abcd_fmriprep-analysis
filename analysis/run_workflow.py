@@ -4,30 +4,9 @@ import pandas as pd
 import subprocess
 import time
 import argparse
-
-
-def submit_job(job_name, cores, partition, output_file, error_file, queue, account, command):
-
-    os.makedirs(op.dirname(output_file), exist_ok=True)
-    os.makedirs(op.dirname(error_file), exist_ok=True)
-
-    cmd = 'sbatch -J {job_name} \
-                  -c {cores} \
-                  -p {partition} \
-                  -o {output_file} \
-                  -e {error_file} \
-                  --qos {queue} \
-                  --account {account} \
-                  --wrap="{command}"'.format(job_name=job_name,
-                                           cores=cores,
-                                           partition=partition,
-                                           output_file=output_file,
-                                           error_file=error_file,
-                                           queue=queue,
-                                           account=account,
-                                           command=command)
-    print(cmd)
-    os.system(cmd)
+import sys
+sys.path.append('/home/data/abcd/code/abcd_fmriprep-analysis')
+from utils import submit_job
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Perform whole-brain task '
@@ -82,7 +61,7 @@ def main(argv=None):
                             queue='pq_nbc',
                             account='iacc_nbc',
                             command=cmd)
-                exit()
+
 
 if __name__ == '__main__':
     main()

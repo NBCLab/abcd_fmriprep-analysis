@@ -13,10 +13,12 @@ from nilearn import masking
 from nilearn.image import smooth_img
 from nipype.interfaces.fsl import Merge
 import pandas as pd
-from enhance_censoring import main as enhance_censoring
 import json
+import sys
+sys.path.append('/home/data/abcd/code/abcd_fmriprep-analysis')
 from utils import fd_censoring
 from utils import motion_parameters
+from utils import enhance_censoring
 
 
 def get_parser():

@@ -11,10 +11,12 @@ import argparse
 import pandas as pd
 import json as js
 import numpy as np
-from enhance_censoring import main as enhance_censoring
+import sys
+sys.path.append('/home/data/abcd/code/abcd_fmriprep-analysis')
 from utils import fd_censoring
 from utils import motion_parameters
 from utils import get_acompcor
+from utils import enhance_censoring
 
 
 def get_parser():
