@@ -39,7 +39,7 @@ def main(argv=None):
 
     args = get_parser().parse_args(argv)
 
-    fmriprep_dir = op.join(args.bids_dir, 'derivatives', 'fmriprep-20.2.1')
+    fmriprep_dir = op.join(args.bids_dir, 'derivatives', 'fmriprep-21.0.0')
     output_dir = op.join(args.bids_dir, 'derivatives', 'fmriprep_post-process', args.sub, args.ses, args.task)
     os.makedirs(output_dir, exist_ok=True)
 
@@ -76,7 +76,7 @@ def main(argv=None):
     for scan in scans:
         print(scan)
 
-        scan_base = scan.split('_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz')[0]
+        scan_base = scan.split('_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz')[0]
 
         #here, we need to delete the first 8 TRs (Siemens/Philips) or
         # first 5 TRs (GE). GE is weird bc it actually acquires 16 TRs, where the first
@@ -111,10 +111,10 @@ def main(argv=None):
 
         #save image mask
         nib.save(tmp_img_mask, op.join(output_dir,
-                                       '{}_space-MNI152NLin2009cAsym_res-2_desc-mask.nii.gz'.format(op.basename(scan_base))))
+                                       '{}_space-MNI152NLin2009cAsym_desc-mask.nii.gz'.format(op.basename(scan_base))))
         #save smoothed images
         nib.save(norm_img, op.join(output_dir,
-                                   '{}_space-MNI152NLin2009cAsym_res-2_desc-smooth.nii.gz'.format(op.basename(scan_base))))
+                                   '{}_space-MNI152NLin2009cAsym_desc-smooth.nii.gz'.format(op.basename(scan_base))))
         #write TR out
         with open(tr_concat_fname, 'a+') as fo:
             fo.write('{}\n'.format(tr_count))
@@ -160,7 +160,7 @@ def main(argv=None):
     merger.inputs.dimension = 't'
     merger.inputs.tr = 0.8
     merger.inputs.merged_file = op.join(output_dir,
-                                        '{sub}_{ses}_task-{task}_{run_concat_str}_space-MNI152NLin2009cAsym_res-2_desc-smooth.nii.gz'.format(sub=args.sub,
+                                        '{sub}_{ses}_task-{task}_{run_concat_str}_space-MNI152NLin2009cAsym_desc-smooth.nii.gz'.format(sub=args.sub,
                                                                                                      ses=args.ses,
                                                                                                      task=args.task,
                                                                                                      run_concat_str=run_concat_str))
@@ -172,7 +172,7 @@ def main(argv=None):
 
     grp_mask = masking.intersect_masks(masks, threshold=1)
     nib.save(grp_mask, op.join(output_dir,
-                               '{sub}_{ses}_task-{task}_{run_concat_str}_space-MNI152NLin2009cAsym_res-2_desc-mask.nii.gz'.format(sub=args.sub,
+                               '{sub}_{ses}_task-{task}_{run_concat_str}_space-MNI152NLin2009cAsym_desc-mask.nii.gz'.format(sub=args.sub,
                                                                                           ses=args.ses,
                                                                                           task=args.task,
                                                                                           run_concat_str=run_concat_str)))

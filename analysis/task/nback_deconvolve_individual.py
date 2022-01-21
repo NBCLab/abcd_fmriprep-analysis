@@ -31,7 +31,7 @@ def main(argv=None):
                         args.sub,
                         args.ses,
                         'nback',
-                        '{sub}_{ses}_task-nback_run-{run}_space-MNI152NLin2009cAsym_res-2_desc-smooth.nii.gz'.format(sub=args.sub, ses=args.ses, run=run))
+                        '{sub}_{ses}_task-nback_run-{run}_space-MNI152NLin2009cAsym_desc-smooth.nii.gz'.format(sub=args.sub, ses=args.ses, run=run))
 
         mask_fn = op.join(args.bids_dir,
                         'derivatives',
@@ -39,7 +39,7 @@ def main(argv=None):
                         args.sub,
                         args.ses,
                         'nback',
-                        '{sub}_{ses}_task-nback_run-{run}_space-MNI152NLin2009cAsym_res-2_desc-mask.nii.gz'.format(sub=args.sub, ses=args.ses, run=run))
+                        '{sub}_{ses}_task-nback_run-{run}_space-MNI152NLin2009cAsym_desc-mask.nii.gz'.format(sub=args.sub, ses=args.ses, run=run))
 
         if run == '1+2':
             concat_fn = op.join(args.bids_dir,
@@ -256,7 +256,7 @@ def main(argv=None):
                         args.sub,
                         args.ses,
                         'nback',
-                        '{sub}_{ses}_task-nback_run-{run}_space-MNI152NLin2009cAsym_res-2_desc-REMLbucket+SPMG'.format(sub=args.sub, ses=args.ses, run=run))
+                        '{sub}_{ses}_task-nback_run-{run}_space-MNI152NLin2009cAsym_desc-REMLbucket+SPMG'.format(sub=args.sub, ses=args.ses, run=run))
 
         cmd='3dDeconvolve -input {in_file} \
                           -polort A \

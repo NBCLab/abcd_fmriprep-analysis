@@ -73,8 +73,8 @@ def main(argv=None):
                 submit_job('analysis-{sub}-{ses}-{task}'.format(sub=pid, ses=ses, task=task),
                             cores=4,
                             partition='investor',
-                            output_file=op.join(op.dirname(bids_dir), 'code', task, 'out', '{}-{}'.format(pid, ses)),
-                            error_file=op.join(op.dirname(bids_dir), 'code', task, 'err', '{}-{}'.format(pid, ses)),
+                            output_file=op.join(op.dirname(bids_dir), 'code', 'log', task, 'out', '{}-{}'.format(pid, ses)),
+                            error_file=op.join(op.dirname(bids_dir), 'code', 'log', task, 'err', '{}-{}'.format(pid, ses)),
                             queue='pq_nbc',
                             account='iacc_nbc',
                             command=cmd)

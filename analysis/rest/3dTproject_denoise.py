@@ -35,7 +35,7 @@ def get_parser():
 def main(argv=None):
     args = get_parser().parse_args(argv)
 
-    fmriprep_dir = op.join(args.bids_dir, 'derivatives', 'fmriprep-20.2.1')
+    fmriprep_dir = op.join(args.bids_dir, 'derivatives', 'fmriprep-21.0.0')
     output_dir = op.join(args.bids_dir, 'derivatives/fmriprep_post-process', args.sub, args.ses, 'rest')
     os.makedirs(output_dir, exist_ok=True)
 
@@ -56,8 +56,8 @@ def main(argv=None):
     for scan in scans:
 
         niifile=op.basename(scan).rstrip('_desc-confounds_timeseries.tsv')
-        nii_fn=op.join(fmriprep_dir, 'fmriprep', args.sub, args.ses, 'func', '{}_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz'.format(niifile))
-        mask_fn=op.join(fmriprep_dir, 'fmriprep', args.sub, args.ses, 'func', '{}_space-MNI152NLin2009cAsym_res-2_desc-brain_mask.nii.gz'.format(niifile))
+        nii_fn=op.join(fmriprep_dir, 'fmriprep', args.sub, args.ses, 'func', '{}_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz'.format(niifile))
+        mask_fn=op.join(fmriprep_dir, 'fmriprep', args.sub, args.ses, 'func', '{}_space-MNI152NLin2009cAsym_desc-brain_mask.nii.gz'.format(niifile))
 
         if not op.isfile(op.join(output_dir, op.basename(mask_fn))):
 
