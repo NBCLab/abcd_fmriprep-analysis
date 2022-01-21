@@ -5,7 +5,7 @@ import json as js
 import numpy as np
 
 
-def get_acompcor(regressfile, out_file):
+def get_acompcor(regressfile, out_file, trs_to_delete):
     df_in = pd.read_csv(regressfile, sep='\t')
     with open('{0}.json'.format(regressfile.replace('.tsv', ''))) as json_file:
         data = js.load(json_file)
@@ -21,7 +21,7 @@ def get_acompcor(regressfile, out_file):
 
     df_out = df_in[acompcor_list]
     df_out = df_out.replace('n/a', 0)
-    df_out = df_out.drop([i for i in range(8)])
+    df_out = df_out.drop([i for i in range(trs_to_delete)])
     df_out.to_csv(out_file, sep='\t', header=False, index=False)
 
 
@@ -95,7 +95,7 @@ def motion_parameters(tmp_file, derivatives=None):
     motion_regressors = df_in[motion_labels]
     return motion_regressors
 
-def submit_job(job_name, cores, partition, output_file, error_file, queue, account, command):
+def submit_job(job_name, cores, mem, partition, output_file, error_file, queue, account, command):
 
     os.makedirs(op.dirname(output_file), exist_ok=True)
     os.makedirs(op.dirname(error_file), exist_ok=True)
