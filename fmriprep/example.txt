@@ -1,0 +1,1 @@
+python3 /home/data/abcd/code/abcd_fmriprep-analysis/fmriprep/run_workflow.py --project_dir /home/data/abcd/abcd-hispanic-via --work_dir /scratch/nbc/miriedel/abcd_work --sessions baseline_year_1_arm_1

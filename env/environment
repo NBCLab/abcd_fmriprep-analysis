@@ -4,6 +4,7 @@
 module add miniconda3-4.5.11-gcc-8.2.0-oqs2mbg  
 module add fsl-6.0.4
 module load matlab-2018b
+module load singularity-3.5.3
  
 # Set up project-specific python environment
 source activate /home/data/abcd/code/abcd_fmriprep-analysis/env/abcd
