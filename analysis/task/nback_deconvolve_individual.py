@@ -3,9 +3,9 @@
 Based on
 https://github.com/BIDS-Apps/example/blob/aa0d4808974d79c9fbe54d56d3b47bb2cf4e0a0d/run.py
 """
+import argparse
 import os
 import os.path as op
-import argparse
 
 
 def get_parser():

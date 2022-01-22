@@ -3,22 +3,22 @@
 Based on
 https://github.com/BIDS-Apps/example/blob/aa0d4808974d79c9fbe54d56d3b47bb2cf4e0a0d/run.py
 """
+import argparse
+import json
 import os
 import os.path as op
+import sys
 from glob import glob
-import argparse
+
 import nibabel as nib
 import numpy as np
+import pandas as pd
 from nilearn import masking
 from nilearn.image import smooth_img
 from nipype.interfaces.fsl import Merge
-import pandas as pd
-import json
-import sys
+
 sys.path.append('/home/data/abcd/code/abcd_fmriprep-analysis')
-from utils import fd_censoring
-from utils import motion_parameters
-from utils import enhance_censoring
+from utils import enhance_censoring, fd_censoring, motion_parameters
 
 
 def get_parser():

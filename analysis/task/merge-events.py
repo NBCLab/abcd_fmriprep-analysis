@@ -1,10 +1,11 @@
+import argparse
 import os
 import os.path as op
-from glob import glob
-import pandas as pd
-import argparse
-import numpy as np
 import shutil
+from glob import glob
+
+import numpy as np
+import pandas as pd
 
 
 def get_parser():

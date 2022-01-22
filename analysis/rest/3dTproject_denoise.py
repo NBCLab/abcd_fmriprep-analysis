@@ -3,20 +3,20 @@
 Based on
 https://github.com/BIDS-Apps/example/blob/aa0d4808974d79c9fbe54d56d3b47bb2cf4e0a0d/run.py
 """
+import argparse
+import json as js
 import os
 import os.path as op
 import shutil
-from glob import glob
-import argparse
-import pandas as pd
-import json as js
-import numpy as np
 import sys
+from glob import glob
+
+import numpy as np
+import pandas as pd
+
 sys.path.append('/home/data/abcd/code/abcd_fmriprep-analysis')
-from utils import fd_censoring
-from utils import motion_parameters
-from utils import get_acompcor
-from utils import enhance_censoring
+from utils import (enhance_censoring, fd_censoring, get_acompcor,
+                   motion_parameters)
 
 
 def get_parser():
