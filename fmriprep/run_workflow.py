@@ -1,9 +1,10 @@
+import argparse
 import os
 import os.path as op
-import pandas as pd
 import subprocess
 import time
-import argparse
+
+import pandas as pd
 
 
 def get_parser():
@@ -31,34 +32,41 @@ def main(argv=None):
     participant_ids_fn = op.join(bids_dir, 'participants.tsv')
     participant_ids = pd.read_csv(participant_ids_fn, sep='\t')['participant_id']
 
-    config_file = op.join(project_directory, 'code', '.config.ini')
+    config_file = op.join(project_directory, 'code', 'config.ini')
+    bids_filter = op.join(project_directory, 'code', 'rest-config.json')
+    log_file = op.join(project_directory, 'code', 'log', "abcddicom2bids.txt")
     qc_spreadsheet = op.join(op.dirname(project_directory), 'code', 'spreadsheets', 'abcd_fastqc01.txt')
     work_dir = args.work_dir
 
     for pid in participant_ids:
 
-        if not op.isdir(op.join(bids_dir, 'derivatives', 'fmriprep-20.2.1', 'fmriprep', pid)):
-            cmd = 'python3 /home/data/abcd/code/abcd_fmriprep-analysis/fmriprep/workflow.py \
+        if not op.isfile(op.join(bids_dir, 'derivatives', 'fmriprep-21.0.0', 'fmriprep', '{}.html'.format(pid))):
+            cmd = 'python3 -u /home/data/abcd/code/abcd_fmriprep-analysis/fmriprep/workflow.py \
                            --bids_dir {bids_dir} \
                            --work_dir {work_dir} \
                            --config {config_file} \
+                           --filter {bids_filter} \
                            --qc {qc_spreadsheet} \
                            --sub {sub} --sessions {sessions} \
-                           --modalities {modalities}'.format(project_directory=project_directory,
+                           --modalities {modalities} >> {log_file}'.format(project_directory=project_directory,
                                                             bids_dir=bids_dir,
                                                             work_dir=work_dir,
                                                             config_file=config_file,
+                                                            bids_filter=bids_filter,
                                                             qc_spreadsheet=qc_spreadsheet,
                                                             sub=pid,
                                                             sessions=sessions,
-                                                            modalities=modalities)
-
+                                                            modalities=modalities,
+                                                            log_file=log_file)
+            '''
             getJobsN =  subprocess.Popen("squeue -u $USER | wc -l", shell=True, stdout=subprocess.PIPE).stdout
             JobsN =  getJobsN.read()
-            while int(JobsN.decode("utf-8").strip('\n')) > 20:
+            while int(JobsN.decode("utf-8").strip('\n')) > 30:
                 time.sleep(30)
                 getJobsN =  subprocess.Popen("squeue -u $USER | wc -l", shell=True, stdout=subprocess.PIPE).stdout
                 JobsN =  getJobsN.read()
+            '''
+            print(cmd)
             os.system(cmd)
 
 if __name__ == '__main__':

@@ -70,7 +70,8 @@ def main(argv=None):
         for eventfn in eventsfn:
             run = op.basename(eventfn).split("{}_".format(args.task))[1].split("_bold")[0]
 
-            cmd = "matlab -nodisplay -r \"addpath('task'); create_events {bids_dir} {sub} {ses} {task} {run}\"; exit".format(
+            cmd = "matlab -nodisplay -r \"addpath('task'); create_events {bids_dir} {sub} {ses} \
+                    {task} {run}\"; exit".format(
                 bids_dir=args.bids_dir, sub=args.sub, ses=args.ses, task=args.task, run=run
             )
             os.system(cmd)
