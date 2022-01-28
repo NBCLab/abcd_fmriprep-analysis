@@ -127,7 +127,7 @@ def main(preproc_dir, clean_dir, rsfc_dir, subject, session, desc_list, rois, n_
     else:
         preproc_subj_func_dir = op.join(preproc_dir, subject, "func")
         clean_subj_dir = op.join(clean_dir, subject, "func")
-        rsfc_subj_dir = op.join(rsfc_dir, subject, session, "func")
+        rsfc_subj_dir = op.join(rsfc_dir, subject, "func")
 
     os.makedirs(rsfc_subj_dir, exist_ok=True)
 
@@ -148,8 +148,6 @@ def main(preproc_dir, clean_dir, rsfc_dir, subject, session, desc_list, rois, n_
     assert len(clean_subj_files) == len(smooth_subj_files)
     assert len(clean_subj_files) == len(mask_files)
 
-    # os.makedirs(nuis_subj_dir, exist_ok=True)
-
     # ###################
     # RSFC
     # ###################
@@ -163,24 +161,24 @@ def main(preproc_dir, clean_dir, rsfc_dir, subject, session, desc_list, rois, n_
 
         stim_info = ""
         for i, roi in enumerate(rois):
+            num = i + 1
             # Resample ROIs to MNI152NLin2009cAsym
             roi_name = op.basename(roi)
-            prefix = roi_name.split(".")[0]
+            prefix = roi_name.split("desc-")[0].rstrip("_")
             roi_res = op.join(rsfc_dir, f"{prefix}_space-{space}_desc-brain_mask.nii.gz")
             if not op.exists(roi_res):
                 roi_resample(roi, roi_res, clean_subj_file)
 
             # Average time series of each voxel within each ROIs
-            roi_subj_timeseries = op.join(rsfc_subj_dir, f"{subj_prefix}_ROI{i}.txt")
+            roi_subj_timeseries = op.join(rsfc_subj_dir, f"{subj_prefix}_ROI{num}.txt")
             if not op.exists(roi_subj_timeseries):
                 ave_timeseries(roi_res, clean_subj_file, roi_subj_timeseries)
 
-            # Conform stim_info for 3Ddeconvolve
-            num = i + 1
+            # Conform stim_info for 3dDeconvolve
             stim_info += f"-stim_file {num} {roi_subj_timeseries} "
             stim_info += f'-stim_label {num} "{roi_res}" '
 
-        # Conform design matrix using 3dTconcolve
+        # Conform design matrix using 3dDeconvolve
         des_subj_matrix = op.join(rsfc_subj_dir, f"{subj_prefix}_dmatrix.1D")
         if not op.exists(des_subj_matrix):
             design_matrix(
@@ -192,7 +190,7 @@ def main(preproc_dir, clean_dir, rsfc_dir, subject, session, desc_list, rois, n_
                 n_jobs,
             )
 
-        # Calculate connectivity using the GLM
+        # Calculate connectivity using the GLM in 3dREMLfit
         bucket_subj_reml = op.join(rsfc_subj_dir, f"{subj_prefix}_bucketREML")
         if not op.exists(bucket_subj_reml):
             connectivity(

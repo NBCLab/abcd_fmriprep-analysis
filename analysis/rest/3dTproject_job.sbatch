@@ -29,9 +29,9 @@ BIDS_DIR="${DSET_DIR}/dset"
 CODE_DIR="/home/data/abcd/code/abcd_fmriprep-analysis"
 DERIVS_DIR="${BIDS_DIR}/derivatives"
 FMRIPREP_DIR="${DERIVS_DIR}/fmriprep-${fmriprep_ver}"
-3DTPROJECT_DIR="${DERIVS_DIR}/3dTproject-${afni_ver}"
+CLEAN_DIR="${DERIVS_DIR}/3dTproject-${afni_ver}"
 RSFC_DIR="${DERIVS_DIR}/rsfc"
-mkdir -p ${3DTPROJECT_DIR}
+mkdir -p ${CLEAN_DIR}
 mkdir -p ${RSFC_DIR}
 
 subject=$( sed -n -E "$((${SLURM_ARRAY_TASK_ID} + 1))s/sub-(\S*)\>.*/\1/gp" ${BIDS_DIR}/participants.tsv )
@@ -53,7 +53,7 @@ desc_sm="aCompCorSM6Cens"
 # Run denoising pipeline
 denoising="python ${CODE_DIR}/analysis/rest/3dTproject.py \
           --preproc_dir ${FMRIPREP_DIR} \
-          --clean_dir ${3DTPROJECT_DIR_DIR} \
+          --clean_dir ${CLEAN_DIR} \
           --subject sub-${subject} \
           --session ${session} \
           --fd_thresh ${FD_THR} \
@@ -61,6 +61,7 @@ denoising="python ${CODE_DIR}/analysis/rest/3dTproject.py \
           --desc_list ${desc_clean} ${desc_sm} \
           --n_jobs ${SLURM_CPUS_PER_TASK}"
 # Setup done, run the command
+echo
 echo Commandline: $denoising
 eval $denoising 
 exitcode=$?
@@ -75,7 +76,7 @@ C6="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster6_desc-brain_mask.nii.gz"
 
 rsfc="python ${CODE_DIR}/analysis/rest/rsfc.py \
           --preproc_dir ${FMRIPREP_DIR} \
-          --clean_dir ${3DTPROJECT_DIR} \
+          --clean_dir ${CLEAN_DIR} \
           --rsfc_dir ${RSFC_DIR} \
           --subject sub-${subject} \
           --session ${session} \
@@ -83,6 +84,7 @@ rsfc="python ${CODE_DIR}/analysis/rest/rsfc.py \
           --rois ${C1} ${C2} ${C3} ${C4} ${C5} ${C6} \
           --n_jobs ${SLURM_CPUS_PER_TASK}"
 # Setup done, run the command
+echo
 echo Commandline: $rsfc
 eval $rsfc 
 exitcode=$?
