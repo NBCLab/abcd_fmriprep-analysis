@@ -15,10 +15,16 @@ from utils import enhance_censoring, fd_censoring
 def _get_parser():
     parser = argparse.ArgumentParser(description="Run 3dTproject in fmriprep derivatives")
     parser.add_argument(
-        "--dset",
-        dest="dset",
+        "--preproc_dir",
+        dest="preproc_dir",
         required=True,
-        help="Path to BIDS dataset",
+        help="Path to fMRIPrep directory",
+    )
+    parser.add_argument(
+        "--clean_dir",
+        dest="clean_dir",
+        required=True,
+        help="Path to output directory",
     )
     parser.add_argument(
         "--subject",
@@ -45,10 +51,11 @@ def _get_parser():
         help="Dummy Scans",
     )
     parser.add_argument(
-        "--fmriprep_ver",
-        dest="fmriprep_ver",
+        "--desc_list",
+        dest="desc_list",
         required=True,
-        help="fMRIPrep version",
+        nargs="+",
+        help="Name of the output files in the order [Clean, Clean + Smooth]",
     )
     parser.add_argument(
         "--n_jobs",
@@ -126,16 +133,18 @@ def keep_trs(confounds_file, qc_thresh):
     return out
 
 
-def run_3dtproject(preproc_file, mask_file, confounds_file, dummy_scans, fd_thresh, out_dir):
+def run_3dtproject(
+    preproc_file, mask_file, confounds_file, dummy_scans, fd_thresh, out_dir, desc_list
+):
     preproc_name = op.basename(preproc_file)
     prefix = preproc_name.split("desc-")[0].rstrip("_")
     preproc_json_file = preproc_file.replace(".nii.gz", ".json")
 
     # Determine output files
-    denoised_file = op.join(out_dir, f"{prefix}_desc-aCompCor_bold.nii.gz")
-    denoisedSM_file = op.join(out_dir, f"{prefix}_desc-aCompCorSM6_bold.nii.gz")
-    cens_file = op.join(out_dir, f"{prefix}_desc-aCompCorCens_bold.nii.gz")
-    censSM_file = op.join(out_dir, f"{prefix}_desc-aCompCorSM6Cens_bold.nii.gz")
+    denoised_file = op.join(out_dir, f"{prefix}_desc-temp_bold.nii.gz")
+    denoisedSM_file = op.join(out_dir, f"{prefix}_desc-tempSM6_bold.nii.gz")
+    cens_file = op.join(out_dir, f"{prefix}_desc-{desc_list[0]}_bold.nii.gz")
+    censSM_file = op.join(out_dir, f"{prefix}_desc-{desc_list[1]}_bold.nii.gz")
 
     # Create regressor file
     regressor_file = op.join(out_dir, f"{prefix}_regressors.1D")
@@ -231,12 +240,9 @@ def run_3dtproject(preproc_file, mask_file, confounds_file, dummy_scans, fd_thre
             json.dump(json_info, fo, sort_keys=True, indent=4)
 
 
-def main(dset, subject, session, fd_thresh, dummy_scans, fmriprep_ver, n_jobs):
+def main(preproc_dir, clean_dir, subject, session, fd_thresh, dummy_scans, desc_list, n_jobs):
     """Run denoising workflows on a given dataset."""
     # Taken from Taylor's pipeline: https://github.com/ME-ICA/ddmra
-    deriv_dir = op.join(dset, "derivatives")
-    nuis_dir = op.join(deriv_dir, "3dTproject-20.2.06")
-    preproc_dir = op.join(deriv_dir, f"fmriprep-{fmriprep_ver}")
     space = "MNI152NLin2009cAsym"
     fd_thresh = float(fd_thresh)
     dummy_scans = int(dummy_scans)
@@ -244,10 +250,12 @@ def main(dset, subject, session, fd_thresh, dummy_scans, fmriprep_ver, n_jobs):
 
     if session is not None:
         preproc_subj_func_dir = op.join(preproc_dir, subject, session, "func")
-        nuis_subj_dir = op.join(nuis_dir, subject, session, "func")
+        nuis_subj_dir = op.join(clean_dir, subject, session, "func")
     else:
         preproc_subj_func_dir = op.join(preproc_dir, subject, "func")
-        nuis_subj_dir = op.join(nuis_dir, subject, "func")
+        nuis_subj_dir = op.join(clean_dir, subject, "func")
+
+    os.makedirs(nuis_subj_dir, exist_ok=True)
 
     # Collect important files
     confounds_files = sorted(
@@ -263,16 +271,15 @@ def main(dset, subject, session, fd_thresh, dummy_scans, fmriprep_ver, n_jobs):
     )
     assert len(preproc_files) == len(confounds_files)
     assert len(preproc_files) == len(mask_files)
-
-    os.makedirs(nuis_subj_dir, exist_ok=True)
+    assert len(desc_list) == 2
 
     # ###################
     # Nuisance Regression
     # ###################
     for file, preproc_file in enumerate(preproc_files):
         print(f"\tDenoising {preproc_file}", flush=True)
-        print(f"\tMask {mask_files[file]}", flush=True)
-        print(f"\tConfound {confounds_files[file]}", flush=True)
+        print(f"\t     Mask {mask_files[file]}", flush=True)
+        print(f"\t Confound {confounds_files[file]}", flush=True)
         run_3dtproject(
             preproc_file,
             mask_files[file],
@@ -280,6 +287,7 @@ def main(dset, subject, session, fd_thresh, dummy_scans, fmriprep_ver, n_jobs):
             dummy_scans,
             fd_thresh,
             nuis_subj_dir,
+            desc_list,
         )
 
 

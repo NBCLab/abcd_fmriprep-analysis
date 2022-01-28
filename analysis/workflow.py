@@ -103,7 +103,7 @@ def main(argv=None):
         if args.roi:
             rois = "{}".format(" ".join(args.roi))
 
-            cmd = "python3 {code_dir}/rest/rsfc.py --bids_dir {bids_dir} \
+            cmd = "python3 {code_dir}/rest/rsfc-old.py --bids_dir {bids_dir} \
                                                  --sub {sub} \
                                                  --ses {ses} \
                                                  --roi {roi}".format(

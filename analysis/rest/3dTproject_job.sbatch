@@ -22,12 +22,17 @@ set -e
 #Load the software needed
 source /home/data/abcd/code/abcd_fmriprep-analysis/env/environment
 fmriprep_ver=21.0.0
+afni_ver=20.2.06
 
 DSET_DIR="/home/data/abcd/abcd-hispanic-via"
 BIDS_DIR="${DSET_DIR}/dset"
 CODE_DIR="/home/data/abcd/code/abcd_fmriprep-analysis"
 DERIVS_DIR="${BIDS_DIR}/derivatives"
-mkdir -p ${DERIVS_DIR}
+FMRIPREP_DIR="${DERIVS_DIR}/fmriprep-${fmriprep_ver}"
+3DTPROJECT_DIR="${DERIVS_DIR}/3dTproject-${afni_ver}"
+RSFC_DIR="${DERIVS_DIR}/rsfc"
+mkdir -p ${3DTPROJECT_DIR}
+mkdir -p ${RSFC_DIR}
 
 subject=$( sed -n -E "$((${SLURM_ARRAY_TASK_ID} + 1))s/sub-(\S*)\>.*/\1/gp" ${BIDS_DIR}/participants.tsv )
 session="ses-baselineYear1Arm1"
@@ -43,19 +48,43 @@ elif [[ ${manufacturer} == "Siemens" ]] || [[ ${manufacturer} == "Philips" ]]; t
     DM_SCANS=8
 fi
 FD_THR=0.35
-
-cmd="python ${CODE_DIR}/analysis/rest/3dTproject.py \
-          --dset ${BIDS_DIR} \
+desc_clean="aCompCorCens"
+desc_sm="aCompCorSM6Cens"
+# Run denoising pipeline
+denoising="python ${CODE_DIR}/analysis/rest/3dTproject.py \
+          --preproc_dir ${FMRIPREP_DIR} \
+          --clean_dir ${3DTPROJECT_DIR_DIR} \
           --subject sub-${subject} \
           --session ${session} \
           --fd_thresh ${FD_THR} \
           --dummy_scans ${DM_SCANS} \
-          --fmriprep_ver ${fmriprep_ver} \
+          --desc_list ${desc_clean} ${desc_sm} \
           --n_jobs ${SLURM_CPUS_PER_TASK}"
 # Setup done, run the command
-echo Commandline: $cmd
-eval $cmd 
+echo Commandline: $denoising
+eval $denoising 
+exitcode=$?
 
+# Run RSFC pipeline
+C1="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster1_desc-brain_mask.nii.gz"
+C2="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster2_desc-brain_mask.nii.gz"
+C3="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster3_desc-brain_mask.nii.gz"
+C4="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster4_desc-brain_mask.nii.gz"
+C5="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster5_desc-brain_mask.nii.gz"
+C6="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster6_desc-brain_mask.nii.gz"
+
+rsfc="python ${CODE_DIR}/analysis/rest/rsfc.py \
+          --preproc_dir ${FMRIPREP_DIR} \
+          --clean_dir ${3DTPROJECT_DIR} \
+          --rsfc_dir ${RSFC_DIR} \
+          --subject sub-${subject} \
+          --session ${session} \
+          --desc_list ${desc_clean} ${desc_sm} \
+          --rois ${C1} ${C2} ${C3} ${C4} ${C5} ${C6} \
+          --n_jobs ${SLURM_CPUS_PER_TASK}"
+# Setup done, run the command
+echo Commandline: $rsfc
+eval $rsfc 
 exitcode=$?
 
 # Output results to a table
