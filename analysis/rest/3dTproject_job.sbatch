@@ -30,12 +30,11 @@ CODE_DIR="/home/data/abcd/code/abcd_fmriprep-analysis"
 DERIVS_DIR="${BIDS_DIR}/derivatives"
 FMRIPREP_DIR="${DERIVS_DIR}/fmriprep-${fmriprep_ver}"
 CLEAN_DIR="${DERIVS_DIR}/3dTproject-${afni_ver}"
-RSFC_DIR="${DERIVS_DIR}/rsfc"
 mkdir -p ${CLEAN_DIR}
-mkdir -p ${RSFC_DIR}
 
 subject=$( sed -n -E "$((${SLURM_ARRAY_TASK_ID} + 1))s/sub-(\S*)\>.*/\1/gp" ${BIDS_DIR}/participants.tsv )
 session="ses-baselineYear1Arm1"
+
 # Get manufacture to set dummy scans
 jsonlist=($(ls ${BIDS_DIR}/sub-${subject}/*/*/*.json))
 json=${jsonlist[-1]}
@@ -67,12 +66,15 @@ eval $denoising
 exitcode=$?
 
 # Run RSFC pipeline
+# For individual Clusters, just change the derivatives output name 
 C1="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster1_desc-brain_mask.nii.gz"
 C2="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster2_desc-brain_mask.nii.gz"
 C3="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster3_desc-brain_mask.nii.gz"
 C4="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster4_desc-brain_mask.nii.gz"
 C5="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster5_desc-brain_mask.nii.gz"
 C6="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster6_desc-brain_mask.nii.gz"
+RSFC_DIR="${DERIVS_DIR}/rsfc_c1-c2-c3-c4-c5-c6"
+mkdir -p ${RSFC_DIR}
 
 rsfc="python ${CODE_DIR}/analysis/rest/rsfc.py \
           --preproc_dir ${FMRIPREP_DIR} \

@@ -192,6 +192,7 @@ def run_3dtproject(
     if not op.exists(cens_file):
         cmd = f"3dTcat -prefix {cens_file} {denoised_file}'{tr_keep}'"
         print(f"\t\t{cmd}", flush=True)
+        print(f"\t\t\tKeeping {len(tr_keep)} TRs", flush=True)
         os.system(cmd)
         os.remove(denoised_file)
 
@@ -209,6 +210,7 @@ def run_3dtproject(
     if not op.exists(censSM_file):
         cmd = f"3dTcat -prefix {censSM_file} {denoisedSM_file}'{tr_keep}'"
         print(f"\t\t{cmd}", flush=True)
+        print(f"\t\t\tKeeping {len(tr_keep)} TRs", flush=True)
         os.system(cmd)
         os.remove(denoisedSM_file)
 
@@ -277,9 +279,10 @@ def main(preproc_dir, clean_dir, subject, session, fd_thresh, dummy_scans, desc_
     # Nuisance Regression
     # ###################
     for file, preproc_file in enumerate(preproc_files):
-        print(f"\tDenoising {preproc_file}", flush=True)
-        print(f"\t     Mask {mask_files[file]}", flush=True)
-        print(f"\t Confound {confounds_files[file]}", flush=True)
+        print(f"\tProcessing {subject} {session} files:", flush=True)
+        print(f"\t\tDenoising: {preproc_file}", flush=True)
+        print(f"\t\tMask:      {mask_files[file]}", flush=True)
+        print(f"\t\tConfound:  {confounds_files[file]}", flush=True)
         run_3dtproject(
             preproc_file,
             mask_files[file],

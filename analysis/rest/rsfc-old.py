@@ -85,15 +85,15 @@ def main(argv=None):
 
             matrix_fname = "{}.1D".format(roi_out_dirname)
             cmd = "3dDeconvolve -input {rs_smooth_fn} \
-                	    	-x1D_stop \
-                	    	-mask {mask_fname} \
-                	    	-num_stimts {num_roi} \
-                	    	-jobs 6 \
-                	    	-svd \
-                	    	-local_times \
-                	    	-basis_normall 1 \
-                	    	{stim_info} \
-                	    	-x1D {matrix_fname}".format(
+                    -x1D_stop \
+                    -mask {mask_fname} \
+                    -num_stimts {num_roi} \
+                    -jobs 6 \
+                    -svd \
+                    -local_times \
+                    -basis_normall 1 \
+                    {stim_info} \
+                    -x1D {matrix_fname}".format(
                 rs_smooth_fn=smooth_file,
                 mask_fname=mask_fname,
                 num_roi=len(rois),
@@ -106,12 +106,12 @@ def main(argv=None):
 
             out_bucket = op.join(out_dir, "{}_bucket-REML".format(roi_out_dirname))
             cmd = "3dREMLfit -matrix {matrix_fname} \
-                        -input {rs_smooth_fn} \
-          	            -mask {mask_fname} \
-          	            -fout \
-          	            -tout \
-          	            -Rbuck {out_bucket} \
-                        -verb".format(
+                    -input {rs_smooth_fn} \
+                    -mask {mask_fname} \
+                    -fout \
+                    -tout \
+                    -Rbuck {out_bucket} \
+                    -verb".format(
                 matrix_fname=matrix_fname,
                 rs_smooth_fn=smooth_file,
                 mask_fname=mask_fname,

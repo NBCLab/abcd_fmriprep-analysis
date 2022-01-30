@@ -152,9 +152,10 @@ def main(preproc_dir, clean_dir, rsfc_dir, subject, session, desc_list, rois, n_
     # RSFC
     # ###################
     for file, clean_subj_file in enumerate(clean_subj_files):
-        print(f"\t Clean {clean_subj_file}", flush=True)
-        print(f"\tSmooth {smooth_subj_files[file]}", flush=True)
-        print(f"\t  Mask {mask_files[file]}", flush=True)
+        print(f"\tProcessing {subject} {session} files:", flush=True)
+        print(f"\t\tClean:  {clean_subj_file}", flush=True)
+        print(f"\t\tSmooth: {smooth_subj_files[file]}", flush=True)
+        print(f"\t\tMask:   {mask_files[file]}", flush=True)
 
         clean_subj_name = op.basename(clean_subj_file)
         subj_prefix = clean_subj_name.split("desc-")[0].rstrip("_")
