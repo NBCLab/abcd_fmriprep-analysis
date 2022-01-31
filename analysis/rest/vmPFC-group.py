@@ -105,12 +105,13 @@ def writearg_1sample(onettest_args_fn):
 
 
 def append2arg_1sample(subject, subjAve_roi_briks_file, onettest_args_fn):
-    with open(onettest_args_fn, "w") as fo:
-        fo.write(f"{subject} {subjAve_roi_briks_file}\n")
+    brik_id = "{brik}'[0]'".format(brik=subjAve_roi_briks_file)
+    with open(onettest_args_fn, "a") as fo:
+        fo.write(f"{subject} {brik_id}\n")
 
 
-def get_setAB(subject, subjAve_roi_briks_file, lpa_df, setA, setB):
-    sub_df = lpa_df[lpa_df["subjectkey"] == "NDAR_{}".format(subject.split("sub-NDAR")[1])]
+def get_setAB(subject, subjAve_roi_briks_file, participants_df, setA, setB):
+    sub_df = participants_df[participants_df["participant_id"] == subject]
     brik_id = "{brik}'[0]'".format(brik=subjAve_roi_briks_file)
     if sub_df["CProb1"].values[0] >= 0.8:
         setA.append("{sub_id} {brik_id}\n".format(sub_id=subject, brik_id=brik_id))
@@ -125,17 +126,17 @@ def writearg_2sample(setA, setB, twottest_args_fn):
     setA = " ".join(setA)
     setB = " ".join(setB)
     with open(twottest_args_fn, "w") as fo:
-        fo.write("-setA Bicult {setA}\n -setB Detached {setB}\n")
+        fo.write(f"-setA Bicult {setA}\n-setB Detached {setB}\n")
 
 
 def writecov_1sample(onettest_cov_fn):
-    with open(onettest_cov_fn) as fo:
+    with open(onettest_cov_fn, "w") as fo:
         fo.write(
             "subject age_p age_c site FD education income nativity_p nativity_c gender_p gender_c\n"
         )
 
 
-def append2cov(subject, mean_fd, behavioral_df, onettest_cov_fn):
+def append2cov_1sample(subject, mean_fd, behavioral_df, onettest_cov_fn):
     site_dict = {site: i for i, site in enumerate(behavioral_df["site_id_l"].unique())}
     sub_df = behavioral_df[
         behavioral_df["subjectkey"] == "NDAR_{}".format(subject.split("sub-NDAR")[1])
@@ -150,7 +151,7 @@ def append2cov(subject, mean_fd, behavioral_df, onettest_cov_fn):
     nativity_c = sub_df["demo_origin_v2"].values[0]
     gender_p = sub_df["demo_prnt_gender_id_v2"].values[0]
     gender_c = sub_df["demo_gender_id_v2"].values[0]
-    with open(onettest_cov_fn) as fo:
+    with open(onettest_cov_fn, "a") as fo:
         fo.write(
             f"{subject} {age_p} {age_c} {site} {mean_fd} {education} {income} {nativity_p} {nativity_c} {gender_p} {gender_c}\n"
         )
@@ -177,7 +178,6 @@ def main(dset, mriqc_dir, preproc_dir, rsfc_dir, session, n_jobs):
         ),
         sep="\t",
     )
-    lpa_df = pd.read_csv(op.join(dset, "derivatives", "ABCD_Accult_Share.dat"), sep="\t")
     subjects = participants_df["participant_id"].tolist()[:10]
 
     # Define directories
@@ -236,8 +236,11 @@ def main(dset, mriqc_dir, preproc_dir, rsfc_dir, session, n_jobs):
         twottest_args_fn = op.join(
             rsfc_group_dir, f"sub-group_{session}_task-rest_desc-2SampletTest{label}_args.txt"
         )
+        arg_1sample = False
+        cov_1sample = False
         if not op.exists(onettest_args_fn):
             writearg_1sample(onettest_args_fn)
+            arg_1sample = True
 
         # Conform onettest_cov_fn and twottest_cov_fn
         onettest_cov_fn = op.join(
@@ -245,6 +248,7 @@ def main(dset, mriqc_dir, preproc_dir, rsfc_dir, session, n_jobs):
         )
         if not op.exists(onettest_cov_fn):
             writecov_1sample(onettest_cov_fn)
+            cov_1sample = True
 
         setA = []
         setB = []
@@ -267,23 +271,29 @@ def main(dset, mriqc_dir, preproc_dir, rsfc_dir, session, n_jobs):
                 f"{prefix}_meanFD.txt",
             )
 
-            if not op.exists(subjAve_roi_briks_file):
+            if not op.exists(f"{subjAve_roi_briks_file}+tlrc.BRIK"):
                 subj_ave_roi(subj_briks_files, subjAve_roi_briks_file, label_bucket_dict[label])
 
             # Get subject level mean FD
             mean_fd = subj_mean_fd(preproc_subj_dir, subj_briks_files, subj_mean_fd_file)
 
-            # Append subject specific info for onettest_args_fn and twottest_args_fn
-            if not op.exists(onettest_args_fn):
-                append2arg_1sample(subject, subjAve_roi_briks_file, onettest_args_fn)
+            # Append subject specific info for onettest_args_fn
+            if (op.exists(onettest_args_fn)) and (arg_1sample):
+                append2arg_1sample(
+                    subject, f"{subjAve_roi_briks_file}+tlrc.BRIK", onettest_args_fn
+                )
 
+            # Get setA and setB to write twottest_args_fn
             if not op.exists(twottest_args_fn):
-                setA, setB = get_setAB(subject, subjAve_roi_briks_file, lpa_df, setA, setB)
+                setA, setB = get_setAB(
+                    subject, f"{subjAve_roi_briks_file}+tlrc.BRIK", participants_df, setA, setB
+                )
 
-            # Append subject specific info for onettest_cov_fn and twottest_cov_fn
-            if not op.exists(onettest_cov_fn):
-                append2cov(subject, mean_fd, behavioral_df, onettest_cov_fn)
+            # Append subject specific info for onettest_cov_fn
+            if (op.exists(onettest_cov_fn)) and (cov_1sample):
+                append2cov_1sample(subject, mean_fd, behavioral_df, onettest_cov_fn)
 
+        # Write twottest_args_fn
         if not op.exists(twottest_args_fn):
             writearg_2sample(setA, setB, twottest_args_fn)
 
@@ -303,8 +313,14 @@ def main(dset, mriqc_dir, preproc_dir, rsfc_dir, session, n_jobs):
         args_files = [onettest_args_fn, twottest_args_fn]
 
         for file, ttest_briks_fn in enumerate(ttest_briks_files):
-            if not op.exists(ttest_briks_fn):
-                run_ttest(ttest_briks_fn, group_mask_fn, covariates_files[file], args_files[file])
+            os.chdir(op.dirname(ttest_briks_fn))
+            if not op.exists(f"{ttest_briks_fn}+tlrc.BRIK"):
+                run_ttest(
+                    op.basename(ttest_briks_fn),
+                    group_mask_fn,
+                    covariates_files[file],
+                    args_files[file],
+                )
 
 
 def _main(argv=None):
