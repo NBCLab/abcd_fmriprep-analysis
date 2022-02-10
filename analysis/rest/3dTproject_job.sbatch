@@ -9,8 +9,8 @@
 #SBATCH --qos=pq_nbc
 #SBATCH --partition=IB_16C_96G
 # Outputs ----------------------------------
-#SBATCH --output=/home/data/abcd/abcd-hispanic-via/code/log/%x_%A-%a.out
-#SBATCH --error=/home/data/abcd/abcd-hispanic-via/code/log/%x_%A-%a.err
+#SBATCH --output=/home/data/abcd/abcd-hispanic-via/code/log/%x/%x_%A-%a.out
+#SBATCH --error=/home/data/abcd/abcd-hispanic-via/code/log/%x/%x_%A-%a.err
 # ------------------------------------------
 
 pwd; hostname; date
@@ -21,6 +21,7 @@ set -e
 #==============Shell script==============#
 #Load the software needed
 source /home/data/abcd/code/abcd_fmriprep-analysis/env/environment
+mriqc_ver=0.16.1
 fmriprep_ver=21.0.0
 afni_ver=20.2.06
 
@@ -28,11 +29,18 @@ DSET_DIR="/home/data/abcd/abcd-hispanic-via"
 BIDS_DIR="${DSET_DIR}/dset"
 CODE_DIR="/home/data/abcd/code/abcd_fmriprep-analysis"
 DERIVS_DIR="${BIDS_DIR}/derivatives"
+MRIQC_DIR="${DERIVS_DIR}/mriqc-${mriqc_ver}"
 FMRIPREP_DIR="${DERIVS_DIR}/fmriprep-${fmriprep_ver}"
 CLEAN_DIR="${DERIVS_DIR}/3dTproject-${afni_ver}"
 mkdir -p ${CLEAN_DIR}
 
-subject=$( sed -n -E "$((${SLURM_ARRAY_TASK_ID} + 1))s/sub-(\S*)\>.*/\1/gp" ${BIDS_DIR}/participants.tsv )
+
+# THISJOBVALUE=${SLURM_ARRAY_TASK_ID}
+# Use for array > 1000 elements uncomment the following two lines and comment the previous line
+VALUES=({1000..1200})
+THISJOBVALUE=${VALUES[${SLURM_ARRAY_TASK_ID}]}
+
+subject=$( sed -n -E "$((${THISJOBVALUE} + 1))s/sub-(\S*)\>.*/\1/gp" ${BIDS_DIR}/participants.tsv )
 session="ses-baselineYear1Arm1"
 
 # Get manufacture to set dummy scans
@@ -51,6 +59,7 @@ desc_clean="aCompCorCens"
 desc_sm="aCompCorSM6Cens"
 # Run denoising pipeline
 denoising="python ${CODE_DIR}/analysis/rest/3dTproject.py \
+          --mriqc_dir ${MRIQC_DIR} \
           --preproc_dir ${FMRIPREP_DIR} \
           --clean_dir ${CLEAN_DIR} \
           --subject sub-${subject} \
@@ -77,6 +86,7 @@ RSFC_DIR="${DERIVS_DIR}/rsfc_c1-c2-c3-c4-c5-c6"
 mkdir -p ${RSFC_DIR}
 
 rsfc="python ${CODE_DIR}/analysis/rest/rsfc.py \
+          --mriqc_dir ${MRIQC_DIR} \
           --preproc_dir ${FMRIPREP_DIR} \
           --clean_dir ${CLEAN_DIR} \
           --rsfc_dir ${RSFC_DIR} \
@@ -92,9 +102,9 @@ eval $rsfc
 exitcode=$?
 
 # Output results to a table
-echo "sub-$subject   ${SLURM_ARRAY_TASK_ID}    $exitcode" \
-      >> ${DSET_DIR}/code/log/${SLURM_JOB_NAME}.${SLURM_ARRAY_JOB_ID}.tsv
-echo Finished tasks ${SLURM_ARRAY_TASK_ID} with exit code $exitcode
+echo "sub-$subject   ${THISJOBVALUE}    $exitcode" \
+      >> ${DSET_DIR}/code/log/${SLURM_JOB_NAME}/${SLURM_JOB_NAME}.${SLURM_ARRAY_JOB_ID}.tsv
+echo Finished tasks ${THISJOBVALUE} with exit code $exitcode
 date
 
 exit $exitcode

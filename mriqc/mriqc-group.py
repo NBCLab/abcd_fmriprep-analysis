@@ -30,16 +30,20 @@ def main(data):
         upper, lower = np.percentile(mriqc_group_rest_df[qc_metric].values, [99, 1])
 
         if qc_metric in ["efc", "fd_mean", "gsr_x", "gsr_y"]:
-            runs_exclude_df = runs_exclude_df.append(
-                mriqc_group_rest_df.loc[mriqc_group_rest_df[qc_metric].values > upper],
-                ignore_index=True,
-            )
+            run2exclude = mriqc_group_rest_df.loc[mriqc_group_rest_df[qc_metric].values > upper]
         elif qc_metric in ["snr", "tsnr"]:
-            runs_exclude_df = runs_exclude_df.append(
-                mriqc_group_rest_df.loc[mriqc_group_rest_df[qc_metric].values < lower],
-                ignore_index=True,
-            )
+            run2exclude = mriqc_group_rest_df.loc[mriqc_group_rest_df[qc_metric].values < lower]
 
+        runs_exclude_df = runs_exclude_df.append(run2exclude, ignore_index=True)
+
+    runs_exclude_df = runs_exclude_df[["bids_name"]]
+    # Remove 0 from run id and _bold suffix
+    runs_exclude_df["bids_name"] = (
+        runs_exclude_df["bids_name"].str.replace("run-0", "run-").str.rstrip("_bold")
+    )
+    
+    
+    
     # drop duplicates
     runs_exclude_df = runs_exclude_df.drop_duplicates(subset=["bids_name"])
     runs_exclude_df.to_csv(op.join(data, "runs_to_exclude.tsv"), sep="\t", index=False)

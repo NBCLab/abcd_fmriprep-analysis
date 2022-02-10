@@ -9,11 +9,17 @@ import numpy as np
 import pandas as pd
 
 sys.path.append("/home/data/abcd/code/abcd_fmriprep-analysis")
-from utils import enhance_censoring, fd_censoring
+from utils import enhance_censoring, fd_censoring, get_nvol
 
 
 def _get_parser():
     parser = argparse.ArgumentParser(description="Run 3dTproject in fmriprep derivatives")
+    parser.add_argument(
+        "--mriqc_dir",
+        dest="mriqc_dir",
+        required=True,
+        help="Path to MRIQC directory",
+    )
     parser.add_argument(
         "--preproc_dir",
         dest="preproc_dir",
@@ -133,8 +139,22 @@ def keep_trs(confounds_file, qc_thresh):
     return out
 
 
+def add_outlier(mriqc_dir, prefix):
+
+    runs_to_exclude_df = pd.read_csv(op.join(mriqc_dir, "runs_to_exclude.tsv"), sep="\t")
+
+    if runs_to_exclude_df["bids_name"].str.contains(prefix).any():
+        print(f"\t\t\t{prefix} already in runs_to_exclude.tsv")
+    else:
+        runs_exclude_df = runs_to_exclude_df.append({"bids_name": f"{prefix}"}, ignore_index=True)
+        runs_exclude_df = runs_exclude_df.drop_duplicates(subset=["bids_name"])
+        runs_exclude_df["bids_name"].to_csv(
+            op.join(mriqc_dir, "runs_to_exclude.tsv"), sep="\t", index=False
+        )
+
+
 def run_3dtproject(
-    preproc_file, mask_file, confounds_file, dummy_scans, fd_thresh, out_dir, desc_list
+    mriqc_dir, preproc_file, mask_file, confounds_file, dummy_scans, fd_thresh, out_dir, desc_list
 ):
     preproc_name = op.basename(preproc_file)
     prefix = preproc_name.split("desc-")[0].rstrip("_")
@@ -179,7 +199,23 @@ def run_3dtproject(
         tr_censor = pd.read_csv(censor_file, header=None)
         tr_keep = tr_censor.index[tr_censor[0] == 1].tolist()
 
-    if (not op.exists(denoised_file)) and (not op.exists(cens_file)):
+    exclude = False
+    # Add runs with < 100 volumes to outlier file
+    if len(tr_keep) < 100:
+        exclude = True
+        run_name = preproc_name.split("_space-")[0]
+        print(f"\t\tVolumes={len(tr_keep)}, adding run {run_name} to outliers", flush=True)
+        add_outlier(mriqc_dir, run_name)
+
+    # Add preproc runs < 150 volumes to outlier file
+    preproc_nvol = get_nvol(preproc_file)
+    if preproc_nvol < 150:
+        exclude = True
+        run_name = preproc_name.split("_space-")[0]
+        print(f"\t\tVolumes={preproc_nvol}, adding run {run_name} to outliers", flush=True)
+        add_outlier(mriqc_dir, run_name)
+
+    if (not op.exists(denoised_file)) and (not op.exists(cens_file)) and (not exclude):
         cmd = f"3dTproject \
                 -input {preproc_file}[{dummy_scans}..$] \
                 -polort 1 \
@@ -189,14 +225,13 @@ def run_3dtproject(
                 -mask {mask_file}"
         print(f"\t\t{cmd}", flush=True)
         os.system(cmd)
-    if not op.exists(cens_file):
+    if (op.exists(denoised_file)) and (not op.exists(cens_file)):
         cmd = f"3dTcat -prefix {cens_file} {denoised_file}'{tr_keep}'"
         print(f"\t\t{cmd}", flush=True)
-        print(f"\t\t\tKeeping {len(tr_keep)} TRs", flush=True)
         os.system(cmd)
         os.remove(denoised_file)
 
-    if (not op.exists(denoisedSM_file)) and (not op.exists(censSM_file)):
+    if (not op.exists(denoisedSM_file)) and (not op.exists(censSM_file)) and (not exclude):
         cmd = f"3dTproject \
                 -input {preproc_file}[{dummy_scans}..$] \
                 -polort 1 \
@@ -207,42 +242,44 @@ def run_3dtproject(
                 -mask {mask_file}"
         print(f"\t\t{cmd}", flush=True)
         os.system(cmd)
-    if not op.exists(censSM_file):
+    if (op.exists(denoisedSM_file)) and (not op.exists(censSM_file)):
         cmd = f"3dTcat -prefix {censSM_file} {denoisedSM_file}'{tr_keep}'"
         print(f"\t\t{cmd}", flush=True)
-        print(f"\t\t\tKeeping {len(tr_keep)} TRs", flush=True)
         os.system(cmd)
         os.remove(denoisedSM_file)
 
     # Create json files with Sources and Description fields
     # Load metadata for writing out later and TR now
-    with open(preproc_json_file, "r") as fo:
-        json_info = json.load(fo)
-    json_info["Sources"] = [cens_file, mask_file, regressor_file]
+    if (op.exists(cens_file)) and (op.exists(censSM_file)):
+        with open(preproc_json_file, "r") as fo:
+            json_info = json.load(fo)
+        json_info["Sources"] = [cens_file, mask_file, regressor_file]
 
-    SUFFIXES = {
-        "desc-aCompCorCens_bold": (
-            "Denoising with an aCompCor regression model including 3 PCA components from"
-            "WM and 3 from CSF deepest white matter, 6 motion parameters, and first"
-            "temporal derivatives of motion parameters."
-        ),
-        "desc-aCompCorSM6Cens_bold": (
-            "Denoising with an aCompCor regression model including 3 PCA components from"
-            "WM and 3 from CSF deepest white matter, 6 motion parameters, and first"
-            "temporal derivatives of motion parameters. Spatial smoothing was applied."
-        ),
-    }
-    for suffix, description in SUFFIXES.items():
-        nii_file = op.join(out_dir, f"{prefix}_{suffix}.nii.gz")
-        assert op.isfile(nii_file)
+        SUFFIXES = {
+            "desc-aCompCorCens_bold": (
+                "Denoising with an aCompCor regression model including 3 PCA components from"
+                "WM and 3 from CSF deepest white matter, 6 motion parameters, and first"
+                "temporal derivatives of motion parameters."
+            ),
+            "desc-aCompCorSM6Cens_bold": (
+                "Denoising with an aCompCor regression model including 3 PCA components from"
+                "WM and 3 from CSF deepest white matter, 6 motion parameters, and first"
+                "temporal derivatives of motion parameters. Spatial smoothing was applied."
+            ),
+        }
+        for suffix, description in SUFFIXES.items():
+            nii_file = op.join(out_dir, f"{prefix}_{suffix}.nii.gz")
+            assert op.isfile(nii_file)
 
-        suff_json_file = op.join(out_dir, f"{prefix}_{suffix}.json")
-        json_info["Description"] = description
-        with open(suff_json_file, "w") as fo:
-            json.dump(json_info, fo, sort_keys=True, indent=4)
+            suff_json_file = op.join(out_dir, f"{prefix}_{suffix}.json")
+            json_info["Description"] = description
+            with open(suff_json_file, "w") as fo:
+                json.dump(json_info, fo, sort_keys=True, indent=4)
 
 
-def main(preproc_dir, clean_dir, subject, session, fd_thresh, dummy_scans, desc_list, n_jobs):
+def main(
+    mriqc_dir, preproc_dir, clean_dir, subject, session, fd_thresh, dummy_scans, desc_list, n_jobs
+):
     """Run denoising workflows on a given dataset."""
     # Taken from Taylor's pipeline: https://github.com/ME-ICA/ddmra
     space = "MNI152NLin2009cAsym"
@@ -284,6 +321,7 @@ def main(preproc_dir, clean_dir, subject, session, fd_thresh, dummy_scans, desc_
         print(f"\t\tMask:      {mask_files[file]}", flush=True)
         print(f"\t\tConfound:  {confounds_files[file]}", flush=True)
         run_3dtproject(
+            mriqc_dir,
             preproc_file,
             mask_files[file],
             confounds_files[file],

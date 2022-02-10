@@ -2,10 +2,17 @@ import argparse
 import os
 import os.path as op
 from glob import glob
+import pandas as pd
 
 
 def _get_parser():
     parser = argparse.ArgumentParser(description="Run RSFC in AFNI")
+    parser.add_argument(
+        "--mriqc_dir",
+        dest="mriqc_dir",
+        required=True,
+        help="Path to MRIQC directory",
+    )
     parser.add_argument(
         "--preproc_dir",
         dest="preproc_dir",
@@ -115,7 +122,21 @@ def norm_conn(out_bucket, out_bucket_z):
     os.system(cmd)
 
 
-def main(preproc_dir, clean_dir, rsfc_dir, subject, session, desc_list, rois, n_jobs):
+def add_outlier(mriqc_dir, prefix):
+
+    runs_to_exclude_df = pd.read_csv(op.join(mriqc_dir, "runs_to_exclude.tsv"), sep="\t")
+
+    if runs_to_exclude_df["bids_name"].str.contains(prefix).any():
+        print(f"\t\t\t{prefix} already in runs_to_exclude.tsv")
+    else:
+        runs_exclude_df = runs_to_exclude_df.append({"bids_name": f"{prefix}"}, ignore_index=True)
+        runs_exclude_df = runs_exclude_df.drop_duplicates(subset=["bids_name"])
+        runs_exclude_df["bids_name"].to_csv(
+            op.join(mriqc_dir, "runs_to_exclude.tsv"), sep="\t", index=False
+        )
+
+
+def main(mriqc_dir, preproc_dir, clean_dir, rsfc_dir, subject, session, desc_list, rois, n_jobs):
     """Run denoising workflows on a given dataset."""
     os.system(f"export OMP_NUM_THREADS={n_jobs}")
     space = "MNI152NLin2009cAsym"
@@ -142,31 +163,35 @@ def main(preproc_dir, clean_dir, rsfc_dir, subject, session, desc_list, rois, n_
             op.join(clean_subj_dir, f"*task-rest*_space-{space}*_desc-{desc_list[1]}_bold.nii.gz")
         )
     )
-    mask_files = sorted(
-        glob(op.join(preproc_subj_func_dir, f"*task-rest*_space-{space}*_desc-brain_mask.nii.gz"))
-    )
     assert len(clean_subj_files) == len(smooth_subj_files)
-    assert len(clean_subj_files) == len(mask_files)
 
     # ###################
     # RSFC
     # ###################
     for file, clean_subj_file in enumerate(clean_subj_files):
+        clean_subj_name = op.basename(clean_subj_file)
+        prefix = clean_subj_name.split("desc-")[0].rstrip("_")
+        mask_files = sorted(
+            glob(op.join(preproc_subj_func_dir, f"{prefix}_desc-brain_mask.nii.gz"))
+        )
+        assert len(mask_files) == 1
+
         print(f"\tProcessing {subject} {session} files:", flush=True)
         print(f"\t\tClean:  {clean_subj_file}", flush=True)
         print(f"\t\tSmooth: {smooth_subj_files[file]}", flush=True)
-        print(f"\t\tMask:   {mask_files[file]}", flush=True)
+        print(f"\t\tMask:   {mask_files[0]}", flush=True)
 
         clean_subj_name = op.basename(clean_subj_file)
         subj_prefix = clean_subj_name.split("desc-")[0].rstrip("_")
 
+        exclude = False
         stim_info = ""
         for i, roi in enumerate(rois):
             num = i + 1
             # Resample ROIs to MNI152NLin2009cAsym
-            roi_name = op.basename(roi)
-            prefix = roi_name.split("desc-")[0].rstrip("_")
-            roi_res = op.join(rsfc_dir, f"{prefix}_space-{space}_desc-brain_mask.nii.gz")
+            # roi_name = op.basename(roi)
+            # prefix = roi_name.split("desc-")[0].rstrip("_")
+            roi_res = op.join(rsfc_subj_dir, f"{prefix}_desc-ROI{num}brain_mask.nii.gz")
             if not op.exists(roi_res):
                 roi_resample(roi, roi_res, clean_subj_file)
 
@@ -175,16 +200,24 @@ def main(preproc_dir, clean_dir, rsfc_dir, subject, session, desc_list, rois, n_
             if not op.exists(roi_subj_timeseries):
                 ave_timeseries(roi_res, clean_subj_file, roi_subj_timeseries)
 
+            roi_subj_timeseries_df = pd.read_csv(roi_subj_timeseries, header=None)
+            non_zero = len(roi_subj_timeseries_df.index[roi_subj_timeseries_df[0] != 0].tolist())
+            if non_zero == 0:
+                exclude = True
+                run_name = prefix.split("_space-")[0]
+                print(f"\t\tAdding run {run_name} to outliers", flush=True)
+                add_outlier(mriqc_dir, run_name)
+
             # Conform stim_info for 3dDeconvolve
             stim_info += f"-stim_file {num} {roi_subj_timeseries} "
             stim_info += f'-stim_label {num} "{roi_res}" '
 
         # Conform design matrix using 3dDeconvolve
         des_subj_matrix = op.join(rsfc_subj_dir, f"{subj_prefix}_dmatrix.1D")
-        if not op.exists(des_subj_matrix):
+        if (not op.exists(des_subj_matrix)) and (not exclude):
             design_matrix(
                 smooth_subj_files[file],
-                mask_files[file],
+                mask_files[0],
                 len(rois),
                 stim_info,
                 des_subj_matrix,
@@ -193,14 +226,14 @@ def main(preproc_dir, clean_dir, rsfc_dir, subject, session, desc_list, rois, n_
 
         # Calculate connectivity using the GLM in 3dREMLfit
         bucket_subj_reml = op.join(rsfc_subj_dir, f"{subj_prefix}_bucketREML")
-        if not op.exists(bucket_subj_reml):
-            connectivity(
-                des_subj_matrix, smooth_subj_files[file], mask_files[file], bucket_subj_reml
-            )
+        if (not op.exists(f"{bucket_subj_reml}+tlrc.BRIK")) and (op.exists(des_subj_matrix)):
+            connectivity(des_subj_matrix, smooth_subj_files[file], mask_files[0], bucket_subj_reml)
 
         # Normalize correlations
         bucket_subj_reml_z = op.join(rsfc_subj_dir, f"{subj_prefix}_desc-norm_bucketREML")
-        if not op.exists(bucket_subj_reml_z):
+        if (not op.exists(f"{bucket_subj_reml_z}+tlrc.BRIK")) and (
+            op.exists(f"{bucket_subj_reml}+tlrc.BRIK")
+        ):
             norm_conn(bucket_subj_reml, bucket_subj_reml_z)
 
 
