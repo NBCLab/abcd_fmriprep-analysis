@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=mriqc-group
+#SBATCH --job-name=mriqc
 #SBATCH --time=03:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -9,14 +9,14 @@
 #SBATCH --qos=pq_nbc
 #SBATCH --partition=IB_16C_96G
 # Outputs ----------------------------------
-#SBATCH --output=/home/data/abcd/abcd-hispanic-via/code/log/%x_%j.out
-#SBATCH --error=/home/data/abcd/abcd-hispanic-via/code/log/%x_%j.err
+#SBATCH --output=/home/data/abcd/abcd-hispanic-via/code/log/%x/%x_%j.out
+#SBATCH --error=/home/data/abcd/abcd-hispanic-via/code/log/%x/%x_%j.err
 # ------------------------------------------
 
 pwd; hostname; date
 set -e
 
-# sbatch mriqc-group_job.sbatch
+# sbatch mriqc-group_job.sh
 
 #==============Shell script==============#
 #Load the software needed
@@ -56,7 +56,7 @@ cmd="${SINGULARITY_CMD} /data \
 
 # Setup done, run the command
 echo Commandline: $cmd
-eval $cmd
+# eval $cmd
 exitcode=$?
 
 mriqc="python ${CODE_DIR}/mriqc/mriqc-group.py \

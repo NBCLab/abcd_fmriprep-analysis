@@ -3,14 +3,14 @@
 #SBATCH --time=20:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem-per-cpu=4gb
+#SBATCH --cpus-per-task=8
+#SBATCH --mem-per-cpu=2gb
 #SBATCH --account=iacc_nbc
 #SBATCH --qos=pq_nbc
 #SBATCH --partition=IB_16C_96G
 # Outputs ----------------------------------
-#SBATCH --output=/home/data/abcd/abcd-hispanic-via/code/log/%x_%A-%a.out
-#SBATCH --error=/home/data/abcd/abcd-hispanic-via/code/log/%x_%A-%a.err
+#SBATCH --output=/home/data/abcd/abcd-hispanic-via/code/log/%x/%x_%A-%a.out
+#SBATCH --error=/home/data/abcd/abcd-hispanic-via/code/log/%x/%x_%A-%a.err
 # ------------------------------------------
 
 pwd; hostname; date
@@ -26,8 +26,13 @@ mriqc_ver=0.16.1
 DSET_DIR="/home/data/abcd/abcd-hispanic-via"
 BIDS_DIR="${DSET_DIR}/dset"
 
+# THISJOBVALUE=${SLURM_ARRAY_TASK_ID}
+# Use for array > 1000 elements uncomment the following two lines and comment the previous line
+VALUES=({1000..1200})
+THISJOBVALUE=${VALUES[${SLURM_ARRAY_TASK_ID}]}
+
 # Parse the participants.tsv file and extract one subject ID from the line corresponding to this SLURM task.
-subject=$( sed -n -E "$((${SLURM_ARRAY_TASK_ID} + 1))s/sub-(\S*)\>.*/\1/gp" ${BIDS_DIR}/participants.tsv )
+subject=$( sed -n -E "$((${THISJOBVALUE} + 1))s/sub-(\S*)\>.*/\1/gp" ${BIDS_DIR}/participants.tsv )
 
 CODE_DIR="${DSET_DIR}/code"
 IMG_DIR="/home/data/cis/singularity-images"
@@ -61,15 +66,15 @@ cmd="${SINGULARITY_CMD} /data \
       --mem_gb ${mem_gb}"
 
 # Setup done, run the command
-echo Running task ${SLURM_ARRAY_TASK_ID}
+echo Running task ${THISJOBVALUE}
 echo Commandline: $cmd
 eval $cmd
 exitcode=$?
 
 # Output results to a table
-echo "sub-$subject   ${SLURM_ARRAY_TASK_ID}    $exitcode" \
-      >> ${CODE_DIR}/log/${SLURM_JOB_NAME}.${SLURM_ARRAY_JOB_ID}.tsv
-echo Finished tasks ${SLURM_ARRAY_TASK_ID} with exit code $exitcode
+echo "sub-$subject   ${THISJOBVALUE}    $exitcode" \
+      >> ${CODE_DIR}/log/${SLURM_JOB_NAME}/${SLURM_JOB_NAME}.${SLURM_ARRAY_JOB_ID}.tsv
+echo Finished tasks ${THISJOBVALUE} with exit code $exitcode
 rm -r ${SCRATCH_DIR}
 date
 
