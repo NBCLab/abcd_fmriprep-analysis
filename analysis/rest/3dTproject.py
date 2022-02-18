@@ -30,7 +30,7 @@ def _get_parser():
         "--clean_dir",
         dest="clean_dir",
         required=True,
-        help="Path to output directory",
+        help="Path to denoising directory",
     )
     parser.add_argument(
         "--subject",
@@ -143,6 +143,7 @@ def add_outlier(mriqc_dir, prefix):
 
     runs_to_exclude_df = pd.read_csv(op.join(mriqc_dir, "runs_to_exclude.tsv"), sep="\t")
 
+
     if runs_to_exclude_df["bids_name"].str.contains(prefix).any():
         print(f"\t\t\t{prefix} already in runs_to_exclude.tsv")
     else:
@@ -247,6 +248,7 @@ def run_3dtproject(
         print(f"\t\t{cmd}", flush=True)
         os.system(cmd)
         os.remove(denoisedSM_file)
+    
 
     # Create json files with Sources and Description fields
     # Load metadata for writing out later and TR now
