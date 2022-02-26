@@ -23,7 +23,7 @@ set -e
 source /home/data/abcd/code/abcd_fmriprep-analysis/env/environment
 mriqc_ver=0.16.1
 fmriprep_ver=21.0.0
-afni_ver=20.2.06
+afni_ver=20.2.10
 
 DSET_DIR="/home/data/abcd/abcd-hispanic-via"
 BIDS_DIR="${DSET_DIR}/dset"
@@ -31,14 +31,14 @@ CODE_DIR="/home/data/abcd/code/abcd_fmriprep-analysis"
 DERIVS_DIR="${BIDS_DIR}/derivatives"
 MRIQC_DIR="${DERIVS_DIR}/mriqc-${mriqc_ver}"
 FMRIPREP_DIR="${DERIVS_DIR}/fmriprep-${fmriprep_ver}"
-CLEAN_DIR="${DERIVS_DIR}/3dTproject-${afni_ver}"
+CLEAN_DIR="${DERIVS_DIR}/denoising-${afni_ver}"
 mkdir -p ${CLEAN_DIR}
 
 
-# THISJOBVALUE=${SLURM_ARRAY_TASK_ID}
+THISJOBVALUE=${SLURM_ARRAY_TASK_ID}
 # Use for array > 1000 elements uncomment the following two lines and comment the previous line
-VALUES=({1000..1200})
-THISJOBVALUE=${VALUES[${SLURM_ARRAY_TASK_ID}]}
+# VALUES=({1000..1200})
+# THISJOBVALUE=${VALUES[${SLURM_ARRAY_TASK_ID}]}
 
 subject=$( sed -n -E "$((${THISJOBVALUE} + 1))s/sub-(\S*)\>.*/\1/gp" ${BIDS_DIR}/participants.tsv )
 session="ses-baselineYear1Arm1"
@@ -57,6 +57,7 @@ fi
 FD_THR=0.35
 desc_clean="aCompCorCens"
 desc_sm="aCompCorSM6Cens"
+space="MNI152NLin2009cAsym"
 # Run denoising pipeline
 denoising="python ${CODE_DIR}/analysis/rest/3dTproject.py \
           --mriqc_dir ${MRIQC_DIR} \
@@ -64,6 +65,7 @@ denoising="python ${CODE_DIR}/analysis/rest/3dTproject.py \
           --clean_dir ${CLEAN_DIR} \
           --subject sub-${subject} \
           --session ${session} \
+          --space ${space} \
           --fd_thresh ${FD_THR} \
           --dummy_scans ${DM_SCANS} \
           --desc_list ${desc_clean} ${desc_sm} \
@@ -82,16 +84,16 @@ C3="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster3_desc-brain_mask.nii.gz"
 C4="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster4_desc-brain_mask.nii.gz"
 C5="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster5_desc-brain_mask.nii.gz"
 C6="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster6_desc-brain_mask.nii.gz"
-RSFC_DIR="${DERIVS_DIR}/rsfc_c1-c2-c3-c4-c5-c6"
+RSFC_DIR="${DERIVS_DIR}/rsfc-vmPFC_C1-C2-C3-C4-C5-C6"
 mkdir -p ${RSFC_DIR}
 
 rsfc="python ${CODE_DIR}/analysis/rest/rsfc.py \
           --mriqc_dir ${MRIQC_DIR} \
-          --preproc_dir ${FMRIPREP_DIR} \
           --clean_dir ${CLEAN_DIR} \
           --rsfc_dir ${RSFC_DIR} \
           --subject sub-${subject} \
           --session ${session} \
+          --space ${space} \
           --desc_list ${desc_clean} ${desc_sm} \
           --rois ${C1} ${C2} ${C3} ${C4} ${C5} ${C6} \
           --n_jobs ${SLURM_CPUS_PER_TASK}"

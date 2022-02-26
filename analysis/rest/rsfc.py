@@ -2,6 +2,8 @@ import argparse
 import os
 import os.path as op
 from glob import glob
+from shutil import copyfile
+
 import pandas as pd
 
 
@@ -12,12 +14,6 @@ def _get_parser():
         dest="mriqc_dir",
         required=True,
         help="Path to MRIQC directory",
-    )
-    parser.add_argument(
-        "--preproc_dir",
-        dest="preproc_dir",
-        required=True,
-        help="Path to fMRIPrep directory",
     )
     parser.add_argument(
         "--clean_dir",
@@ -40,8 +36,16 @@ def _get_parser():
     parser.add_argument(
         "--session",
         dest="session",
-        required=True,
+        default=None,
+        required=False,
         help="Session identifier, with the ses- prefix.",
+    )
+    parser.add_argument(
+        "--space",
+        dest="space",
+        default="MNI152NLin2009cAsym",
+        required=False,
+        help="Standard space, MNI152NLin2009cAsym",
     )
     parser.add_argument(
         "--desc_list",
@@ -60,7 +64,8 @@ def _get_parser():
     parser.add_argument(
         "--n_jobs",
         dest="n_jobs",
-        required=True,
+        default=4,
+        required=False,
         help="CPUs",
     )
     return parser
@@ -136,17 +141,16 @@ def add_outlier(mriqc_dir, prefix):
         )
 
 
-def main(mriqc_dir, preproc_dir, clean_dir, rsfc_dir, subject, session, desc_list, rois, n_jobs):
+def main(mriqc_dir, clean_dir, rsfc_dir, subject, session, space, desc_list, rois, n_jobs):
     """Run denoising workflows on a given dataset."""
     os.system(f"export OMP_NUM_THREADS={n_jobs}")
-    space = "MNI152NLin2009cAsym"
     assert len(desc_list) == 2
     if session is not None:
-        preproc_subj_func_dir = op.join(preproc_dir, subject, session, "func")
+        # preproc_subj_func_dir = op.join(preproc_dir, subject, session, "func")
         clean_subj_dir = op.join(clean_dir, subject, session, "func")
         rsfc_subj_dir = op.join(rsfc_dir, subject, session, "func")
     else:
-        preproc_subj_func_dir = op.join(preproc_dir, subject, "func")
+        # preproc_subj_func_dir = op.join(preproc_dir, subject, "func")
         clean_subj_dir = op.join(clean_dir, subject, "func")
         rsfc_subj_dir = op.join(rsfc_dir, subject, "func")
 
@@ -171,15 +175,16 @@ def main(mriqc_dir, preproc_dir, clean_dir, rsfc_dir, subject, session, desc_lis
     for file, clean_subj_file in enumerate(clean_subj_files):
         clean_subj_name = op.basename(clean_subj_file)
         prefix = clean_subj_name.split("desc-")[0].rstrip("_")
-        mask_files = sorted(
-            glob(op.join(preproc_subj_func_dir, f"{prefix}_desc-brain_mask.nii.gz"))
-        )
+        mask_files = sorted(glob(op.join(clean_subj_dir, f"{prefix}_desc-brain_mask.nii.gz")))
         assert len(mask_files) == 1
+        mask_name = os.path.basename(mask_files[0])
+        mask_file = op.join(rsfc_subj_dir, mask_name)
+        copyfile(mask_files[0], mask_file)
 
-        print(f"\tProcessing {subject} {session} files:", flush=True)
+        print(f"\tProcessing {subject} files:", flush=True)
         print(f"\t\tClean:  {clean_subj_file}", flush=True)
         print(f"\t\tSmooth: {smooth_subj_files[file]}", flush=True)
-        print(f"\t\tMask:   {mask_files[0]}", flush=True)
+        print(f"\t\tMask:   {mask_file}", flush=True)
 
         clean_subj_name = op.basename(clean_subj_file)
         subj_prefix = clean_subj_name.split("desc-")[0].rstrip("_")
@@ -188,9 +193,6 @@ def main(mriqc_dir, preproc_dir, clean_dir, rsfc_dir, subject, session, desc_lis
         stim_info = ""
         for i, roi in enumerate(rois):
             num = i + 1
-            # Resample ROIs to MNI152NLin2009cAsym
-            # roi_name = op.basename(roi)
-            # prefix = roi_name.split("desc-")[0].rstrip("_")
             roi_res = op.join(rsfc_subj_dir, f"{prefix}_desc-ROI{num}brain_mask.nii.gz")
             if not op.exists(roi_res):
                 roi_resample(roi, roi_res, clean_subj_file)
@@ -217,7 +219,7 @@ def main(mriqc_dir, preproc_dir, clean_dir, rsfc_dir, subject, session, desc_lis
         if (not op.exists(des_subj_matrix)) and (not exclude):
             design_matrix(
                 smooth_subj_files[file],
-                mask_files[0],
+                mask_file,
                 len(rois),
                 stim_info,
                 des_subj_matrix,
@@ -227,7 +229,7 @@ def main(mriqc_dir, preproc_dir, clean_dir, rsfc_dir, subject, session, desc_lis
         # Calculate connectivity using the GLM in 3dREMLfit
         bucket_subj_reml = op.join(rsfc_subj_dir, f"{subj_prefix}_bucketREML")
         if (not op.exists(f"{bucket_subj_reml}+tlrc.BRIK")) and (op.exists(des_subj_matrix)):
-            connectivity(des_subj_matrix, smooth_subj_files[file], mask_files[0], bucket_subj_reml)
+            connectivity(des_subj_matrix, smooth_subj_files[file], mask_file, bucket_subj_reml)
 
         # Normalize correlations
         bucket_subj_reml_z = op.join(rsfc_subj_dir, f"{subj_prefix}_desc-norm_bucketREML")

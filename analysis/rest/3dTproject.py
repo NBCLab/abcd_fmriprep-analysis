@@ -4,6 +4,7 @@ import os
 import os.path as op
 import sys
 from glob import glob
+from shutil import copyfile
 
 import numpy as np
 import pandas as pd
@@ -41,13 +42,22 @@ def _get_parser():
     parser.add_argument(
         "--session",
         dest="session",
-        required=True,
+        default=None,
+        required=False,
         help="Session identifier, with the ses- prefix.",
+    )
+    parser.add_argument(
+        "--space",
+        dest="space",
+        default="MNI152NLin2009cAsym",
+        required=False,
+        help="Standard space, MNI152NLin2009cAsym",
     )
     parser.add_argument(
         "--fd_thresh",
         dest="fd_thresh",
-        required=True,
+        default=0.35,
+        required=False,
         help="FD threshold",
     )
     parser.add_argument(
@@ -66,7 +76,8 @@ def _get_parser():
     parser.add_argument(
         "--n_jobs",
         dest="n_jobs",
-        required=True,
+        default=4,
+        required=False,
         help="CPUs",
     )
     return parser
@@ -140,16 +151,16 @@ def keep_trs(confounds_file, qc_thresh):
 
 
 def add_outlier(mriqc_dir, prefix):
-
     runs_to_exclude_df = pd.read_csv(op.join(mriqc_dir, "runs_to_exclude.tsv"), sep="\t")
+    runs_to_exclude = runs_to_exclude_df["bids_name"].tolist()
 
-
-    if runs_to_exclude_df["bids_name"].str.contains(prefix).any():
+    if prefix in runs_to_exclude:
         print(f"\t\t\t{prefix} already in runs_to_exclude.tsv")
     else:
-        runs_exclude_df = runs_to_exclude_df.append({"bids_name": f"{prefix}"}, ignore_index=True)
-        runs_exclude_df = runs_exclude_df.drop_duplicates(subset=["bids_name"])
-        runs_exclude_df["bids_name"].to_csv(
+        runs_to_exclude.append(prefix)
+        new_runs_to_exclude_df = pd.DataFrame()
+        new_runs_to_exclude_df["bids_name"] = runs_to_exclude
+        new_runs_to_exclude_df.to_csv(
             op.join(mriqc_dir, "runs_to_exclude.tsv"), sep="\t", index=False
         )
 
@@ -248,7 +259,6 @@ def run_3dtproject(
         print(f"\t\t{cmd}", flush=True)
         os.system(cmd)
         os.remove(denoisedSM_file)
-    
 
     # Create json files with Sources and Description fields
     # Load metadata for writing out later and TR now
@@ -280,11 +290,19 @@ def run_3dtproject(
 
 
 def main(
-    mriqc_dir, preproc_dir, clean_dir, subject, session, fd_thresh, dummy_scans, desc_list, n_jobs
+    mriqc_dir,
+    preproc_dir,
+    clean_dir,
+    subject,
+    session,
+    space,
+    fd_thresh,
+    dummy_scans,
+    desc_list,
+    n_jobs,
 ):
     """Run denoising workflows on a given dataset."""
     # Taken from Taylor's pipeline: https://github.com/ME-ICA/ddmra
-    space = "MNI152NLin2009cAsym"
     fd_thresh = float(fd_thresh)
     dummy_scans = int(dummy_scans)
     os.system(f"export OMP_NUM_THREADS={n_jobs}")
@@ -318,14 +336,18 @@ def main(
     # Nuisance Regression
     # ###################
     for file, preproc_file in enumerate(preproc_files):
-        print(f"\tProcessing {subject} {session} files:", flush=True)
+        mask_name = os.path.basename(mask_files[file])
+        mask_file = op.join(nuis_subj_dir, mask_name)
+        copyfile(mask_files[file], mask_file)
+
+        print(f"\tProcessing {subject} files:", flush=True)
         print(f"\t\tDenoising: {preproc_file}", flush=True)
-        print(f"\t\tMask:      {mask_files[file]}", flush=True)
+        print(f"\t\tMask:      {mask_file}", flush=True)
         print(f"\t\tConfound:  {confounds_files[file]}", flush=True)
         run_3dtproject(
             mriqc_dir,
             preproc_file,
-            mask_files[file],
+            mask_file,
             confounds_files[file],
             dummy_scans,
             fd_thresh,
