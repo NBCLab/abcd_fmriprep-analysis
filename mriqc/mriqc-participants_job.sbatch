@@ -26,10 +26,10 @@ mriqc_ver=0.16.1
 DSET_DIR="/home/data/abcd/abcd-hispanic-via"
 BIDS_DIR="${DSET_DIR}/dset"
 
-# THISJOBVALUE=${SLURM_ARRAY_TASK_ID}
+THISJOBVALUE=${SLURM_ARRAY_TASK_ID}
 # Use for array > 1000 elements uncomment the following two lines and comment the previous line
-VALUES=({1000..1200})
-THISJOBVALUE=${VALUES[${SLURM_ARRAY_TASK_ID}]}
+# VALUES=({1000..1200})
+# THISJOBVALUE=${VALUES[${SLURM_ARRAY_TASK_ID}]}
 
 # Parse the participants.tsv file and extract one subject ID from the line corresponding to this SLURM task.
 subject=$( sed -n -E "$((${THISJOBVALUE} + 1))s/sub-(\S*)\>.*/\1/gp" ${BIDS_DIR}/participants.tsv )

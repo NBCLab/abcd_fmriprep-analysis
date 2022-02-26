@@ -20,7 +20,8 @@ set -e
 
 #==============Shell script==============#
 #Load the software needed
-source /home/data/abcd/code/abcd_fmriprep-analysis/env/environment
+# source /home/data/abcd/code/abcd_fmriprep-analysis/env/environment
+module load singularity-3.5.3
 fmriprep_ver=21.0.0
 
 DSET_DIR="/home/data/abcd/abcd-hispanic-via"

@@ -111,13 +111,15 @@ def motion_parameters(tmp_file, derivatives=None):
     motion_regressors = df_in[motion_labels]
     return motion_regressors
 
+
 def get_nvol(nifti_file):
     import nibabel as nib
-    
+
     # Looking for nvol in the nifti header
     img = nib.load(nifti_file)
     header = img.header
     return header.get_data_shape()[3]
+
 
 def submit_job(job_name, cores, mem, partition, output_file, error_file, queue, account, command):
 

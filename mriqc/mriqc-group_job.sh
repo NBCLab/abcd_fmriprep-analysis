@@ -56,7 +56,7 @@ cmd="${SINGULARITY_CMD} /data \
 
 # Setup done, run the command
 echo Commandline: $cmd
-# eval $cmd
+eval $cmd
 exitcode=$?
 
 mriqc="python ${CODE_DIR}/mriqc/mriqc-group.py \
