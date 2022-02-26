@@ -1,9 +1,20 @@
 #!/bin/bash
+#SBATCH --job-name=abcddownload
+#SBATCH --time=168:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=8gb
+#SBATCH --account=iacc_nbc
+#SBATCH --qos=qos_download
+#SBATCH --partition=download
+# Outputs ----------------------------------
+#SBATCH --output=/home/data/abcd/abcd-hispanic-via/code/log/%x/%x_%j.out
+#SBATCH --error=/home/data/abcd/abcd-hispanic-via/code/log/%x/%x_%j.err
+# ------------------------------------------
 
 pwd; hostname; date
 set -e
-
-# ./abcd2bids.sh
 
 #==============Shell script==============#
 #Load the software needed
