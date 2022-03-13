@@ -1,9 +1,38 @@
 import json as js
 import os
 import os.path as op
+import subprocess
 
 import numpy as np
 import pandas as pd
+
+
+def run_command(command, env=None):
+    """Run a given shell command with certain environment variables set."""
+    # https://github.com/NBCLab/power-replication/blob/master/processing/processing_utils.py
+    merged_env = os.environ
+    if env:
+        merged_env.update(env)
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        shell=True,
+        env=merged_env,
+    )
+    # while True:
+    line = process.stdout.readline()
+    line = str(line, "utf-8")[:-1]
+    # if line == "" and process.poll() is not None:
+    # break
+
+    # if process.returncode != 0:
+    #    raise Exception(
+    #        "Non zero return code: {0}\n"
+    #        "{1}\n\n{2}".format(process.returncode, command, process.stdout.read())
+    #    )
+    # Output
+    return line
 
 
 def get_acompcor(regressfile, out_file, trs_to_delete):
@@ -119,6 +148,26 @@ def get_nvol(nifti_file):
     img = nib.load(nifti_file)
     header = img.header
     return header.get_data_shape()[3]
+
+
+def keep_trs(confounds_file, qc_thresh):
+    print("\tGet TRs to censor")
+    confounds_df = pd.read_csv(confounds_file, sep="\t")
+    qc_arr = confounds_df["framewise_displacement"].values
+    qc_arr = np.nan_to_num(qc_arr, 0)
+    threshold = 3
+
+    mask = qc_arr >= qc_thresh
+
+    K = np.ones(threshold)
+    dil = np.convolve(mask, K, mode="same") >= 1
+    dil_erd = np.convolve(dil, K, mode="same") >= threshold
+
+    prop_incl = np.sum(dil_erd) / qc_arr.shape[0]
+    print(f"\t\tPecentage of TRS flagged {round(prop_incl*100,2)}", flush=True)
+    out = np.ones(qc_arr.shape[0])
+    out[dil_erd] = 0
+    return out
 
 
 def submit_job(job_name, cores, mem, partition, output_file, error_file, queue, account, command):
