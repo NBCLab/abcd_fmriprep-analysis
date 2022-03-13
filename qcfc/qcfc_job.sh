@@ -25,19 +25,19 @@ mriqc_ver=0.16.1
 fmriprep_ver=21.0.0
 afni_ver=20.2.10
 
-
+FD_THR=0.2
 DSET_DIR="/home/data/abcd/abcd-hispanic-via"
 BIDS_DIR="${DSET_DIR}/dset"
 CODE_DIR="/home/data/abcd/code/abcd_fmriprep-analysis"
 DERIVS_DIR="${BIDS_DIR}/derivatives"
 FMRIPREP_DIR="${DERIVS_DIR}/fmriprep-${fmriprep_ver}"
 MRIQC_DIR="${DERIVS_DIR}/mriqc-${mriqc_ver}"
-CLEAN_DIR="${DERIVS_DIR}/denoising-${afni_ver}"
-RSFC_DIR="${DERIVS_DIR}/rsfc-vmPFC_C1-C2-C3-C4-C5-C6"
-QCFC_DIR="${DERIVS_DIR}/qcfc"
+# CLEAN_DIR="${DERIVS_DIR}/denoising-${afni_ver}"
+CLEAN_DIR="${DERIVS_DIR}/denoisingFD${FD_THR}-${afni_ver}"
+# QCFC_DIR="${DERIVS_DIR}/qcfc"
+QCFC_DIR="${DERIVS_DIR}/qcfcFD${FD_THR}"
 mkdir -p ${QCFC_DIR}
 
-FD_THR=0.35
 session="ses-baselineYear1Arm1"
 desc_clean="aCompCorCens"
 desc_sm="aCompCorSM6Cens"

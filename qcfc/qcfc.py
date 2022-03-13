@@ -247,18 +247,24 @@ def main(
 
     # Get list of participants with good data
     if session is not None:
-        img_files = glob(
-            op.join(
-                clean_dir,
-                "*",
-                session,
-                "func",
-                f"*_space-{space}*_desc-{desc_list[0]}_bold.nii.gz",
+        img_files = sorted(
+            glob(
+                op.join(
+                    clean_dir,
+                    "*",
+                    session,
+                    "func",
+                    f"*_space-{space}*_desc-{desc_list[0]}_bold.nii.gz",
+                )
             )
         )
     else:
-        img_files = glob(
-            op.join(clean_dir, "*", "func", f"*_space-{space}*_desc-{desc_list[0]}_bold.nii.gz")
+        img_files = sorted(
+            glob(
+                op.join(
+                    clean_dir, "*", "func", f"*_space-{space}*_desc-{desc_list[0]}_bold.nii.gz"
+                )
+            )
         )
     # TO-DO Use the exlcue from MRIQC here !!!!!!!!!!!!!!!!!!!!!!!!!!
     runs_to_exclude_df = pd.read_csv(op.join(mriqc_dir, "runs_to_exclude_qcfc.tsv"), sep="\t")
@@ -268,6 +274,7 @@ def main(
 
     censored_qcs = []
     for img_clean_file in img_clean_files:
+        # print(op.basename(img_clean_file), flush=True)
         img_clean_name = op.basename(img_clean_file)
         prefix = img_clean_name.split("space-")[0].rstrip("_")
         subject = img_clean_name.split("_")[0]
