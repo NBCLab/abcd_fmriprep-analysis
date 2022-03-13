@@ -20,18 +20,9 @@ def run_command(command, env=None):
         shell=True,
         env=merged_env,
     )
-    # while True:
     line = process.stdout.readline()
     line = str(line, "utf-8")[:-1]
-    # if line == "" and process.poll() is not None:
-    # break
 
-    # if process.returncode != 0:
-    #    raise Exception(
-    #        "Non zero return code: {0}\n"
-    #        "{1}\n\n{2}".format(process.returncode, command, process.stdout.read())
-    #    )
-    # Output
     return line
 
 

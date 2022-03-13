@@ -2,8 +2,8 @@
 
 # Example project environment 
 module add miniconda3-4.5.11-gcc-8.2.0-oqs2mbg  
-# module add fsl-6.0.4
-# module load matlab-2018b
+module add fsl-6.0.4
+module load matlab-2018b
 module load singularity-3.5.3
 module load afni-20.2.06-original
 # module load parallel-20170322-gcc-8.2.0-64hgkki
