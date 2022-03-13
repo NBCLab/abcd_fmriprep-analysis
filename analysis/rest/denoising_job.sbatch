@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=3dTproject
+#SBATCH --job-name=denoising
 #SBATCH --time=24:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -20,15 +20,19 @@ set -e
 
 #==============Shell script==============#
 #Load the software needed
-source /home/data/abcd/code/abcd_fmriprep-analysis/env/environment
-mriqc_ver=0.16.1
-fmriprep_ver=21.0.0
-afni_ver=20.2.10
+# source /home/data/abcd/code/abcd_fmriprep-analysis/env/environment
+module load singularity-3.5.3
 
 DSET_DIR="/home/data/abcd/abcd-hispanic-via"
 BIDS_DIR="${DSET_DIR}/dset"
 CODE_DIR="/home/data/abcd/code/abcd_fmriprep-analysis"
 DERIVS_DIR="${BIDS_DIR}/derivatives"
+IMG_DIR="/home/data/abcd/code/singularity-images"
+# IMG_DIR="/home/data/cis/singularity-images"
+
+mriqc_ver=0.16.1
+fmriprep_ver=21.0.0
+afni_ver=22.0.18
 MRIQC_DIR="${DERIVS_DIR}/mriqc-${mriqc_ver}"
 FMRIPREP_DIR="${DERIVS_DIR}/fmriprep-${fmriprep_ver}"
 CLEAN_DIR="${DERIVS_DIR}/denoising-${afni_ver}"
@@ -54,53 +58,36 @@ elif [[ ${manufacturer} == "Siemens" ]] || [[ ${manufacturer} == "Philips" ]]; t
 	echo "Assign dummy-scans for ${manufacturer}"
     DM_SCANS=8
 fi
+
 FD_THR=0.35
 desc_clean="aCompCorCens"
 desc_sm="aCompCorSM6Cens"
 space="MNI152NLin2009cAsym"
 # Run denoising pipeline
-denoising="python ${CODE_DIR}/analysis/rest/3dTproject.py \
-          --mriqc_dir ${MRIQC_DIR} \
-          --preproc_dir ${FMRIPREP_DIR} \
-          --clean_dir ${CLEAN_DIR} \
-          --subject sub-${subject} \
-          --session ${session} \
-          --space ${space} \
-          --fd_thresh ${FD_THR} \
-          --dummy_scans ${DM_SCANS} \
-          --desc_list ${desc_clean} ${desc_sm} \
-          --n_jobs ${SLURM_CPUS_PER_TASK}"
+SHELL_CMD="singularity exec --cleanenv \
+    -B ${CODE_DIR}:/code \
+    -B ${MRIQC_DIR}:/mriqc \
+    -B ${FMRIPREP_DIR}:/fmriprep \
+    -B ${CLEAN_DIR}:/clean \
+    $IMG_DIR/afni-${afni_ver}.sif"
+# /poldracklab-fmriprep_${fmriprep_ver}.sif
+# /afni-${afni_ver}.sif
+denoising="${SHELL_CMD} python /code/analysis/rest/denoising.py \
+    --mriqc_dir /mriqc \
+    --preproc_dir /fmriprep \
+    --clean_dir /clean \
+    --subject sub-${subject} \
+    --sessions ${session} \
+    --space ${space} \
+    --fd_thresh ${FD_THR} \
+    --dummy_scans ${DM_SCANS} \
+    --desc_list ${desc_clean} ${desc_sm} \
+    --n_jobs ${SLURM_CPUS_PER_TASK}"
+
 # Setup done, run the command
 echo
 echo Commandline: $denoising
 eval $denoising 
-exitcode=$?
-
-# Run RSFC pipeline
-# For individual Clusters, just change the derivatives output name 
-C1="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster1_desc-brain_mask.nii.gz"
-C2="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster2_desc-brain_mask.nii.gz"
-C3="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster3_desc-brain_mask.nii.gz"
-C4="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster4_desc-brain_mask.nii.gz"
-C5="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster5_desc-brain_mask.nii.gz"
-C6="${DSET_DIR}/code/vmPFC_rsfc/rsfc_rois/sub-cluster6_desc-brain_mask.nii.gz"
-RSFC_DIR="${DERIVS_DIR}/rsfc-vmPFC_C1-C2-C3-C4-C5-C6"
-mkdir -p ${RSFC_DIR}
-
-rsfc="python ${CODE_DIR}/analysis/rest/rsfc.py \
-          --mriqc_dir ${MRIQC_DIR} \
-          --clean_dir ${CLEAN_DIR} \
-          --rsfc_dir ${RSFC_DIR} \
-          --subject sub-${subject} \
-          --session ${session} \
-          --space ${space} \
-          --desc_list ${desc_clean} ${desc_sm} \
-          --rois ${C1} ${C2} ${C3} ${C4} ${C5} ${C6} \
-          --n_jobs ${SLURM_CPUS_PER_TASK}"
-# Setup done, run the command
-echo
-echo Commandline: $rsfc
-eval $rsfc 
 exitcode=$?
 
 # Output results to a table
