@@ -1,10 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=abcddownload
-#SBATCH --time=168:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=8gb
 #SBATCH --account=iacc_nbc
 #SBATCH --qos=qos_download
 #SBATCH --partition=download
@@ -67,7 +64,6 @@ for sub in ${subjects[@]}; do
     echo Commandline: $cmd
     eval $cmd
     rm -rf ${SCRATCH_DIR}
-    # rm -rf ${RAW_DIR}/${sub}
     date
 
 done
