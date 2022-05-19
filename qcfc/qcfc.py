@@ -53,11 +53,12 @@ def _get_parser():
         help="Path to QCFC directory",
     )
     parser.add_argument(
-        "--session",
-        dest="session",
-        default=None,
+        "--sessions",
+        dest="sessions",
+        default=[None],
         required=False,
-        help="Session identifier, with the ses- prefix.",
+        nargs="+",
+        help="Sessions identifier, with the ses- prefix.",
     )
     parser.add_argument(
         "--space",
@@ -230,7 +231,7 @@ def main(
     preproc_dir,
     clean_dir,
     qcfc_dir,
-    session,
+    sessions,
     space,
     qc_thresh,
     desc_list,
@@ -245,20 +246,12 @@ def main(
     participant_ids_fn = op.join(dset, "participants.tsv")
     participant_ids_df = pd.read_csv(participant_ids_fn, sep="\t")
 
-    # Get list of participants with good data
-    if session is not None:
-        img_files = sorted(
-            glob(
-                op.join(
-                    clean_dir,
-                    "*",
-                    session,
-                    "func",
-                    f"*_space-{space}*_desc-{desc_list[0]}_bold.nii.gz",
-                )
-            )
-        )
-    else:
+    if sessions[0] is None:
+        temp_ses = glob(op.join(clean_dir, "*", "ses-*"))
+        temp_ses = list(set(temp_ses))
+        if len(temp_ses) > 0:
+            sessions = [op.basename(x) for x in temp_ses]
+    if sessions[0] is None:
         img_files = sorted(
             glob(
                 op.join(
@@ -266,7 +259,25 @@ def main(
                 )
             )
         )
+    else:
+        img_files = sorted(
+            [
+                x
+                for session in sessions
+                for x in glob(
+                    op.join(
+                        clean_dir,
+                        "*",
+                        session,
+                        "func",
+                        f"*_space-{space}*_desc-{desc_list[0]}_bold.nii.gz",
+                    )
+                )
+            ]
+        )
+
     # TO-DO Use the exlcue from MRIQC here !!!!!!!!!!!!!!!!!!!!!!!!!!
+    # runs_to_exclude_df = pd.read_csv(op.join(mriqc_dir, "runs_to_exclude_qcfc.tsv"), sep="\t")
     runs_to_exclude_df = pd.read_csv(op.join(mriqc_dir, "runs_to_exclude_qcfc.tsv"), sep="\t")
     runs_to_exclude = runs_to_exclude_df["bids_name"].tolist()
     prefixes_tpl = tuple(runs_to_exclude)
@@ -278,10 +289,10 @@ def main(
         img_clean_name = op.basename(img_clean_file)
         prefix = img_clean_name.split("space-")[0].rstrip("_")
         subject = img_clean_name.split("_")[0]
-
-        if session is not None:
-            preproc_subj_func_dir = op.join(preproc_dir, subject, session, "func")
-            nuis_subj_dir = op.join(clean_dir, subject, session, "func")
+        temp_session = img_clean_name.split("_")[1]
+        if temp_session.startswith("ses-"):
+            preproc_subj_func_dir = op.join(preproc_dir, subject, temp_session, "func")
+            nuis_subj_dir = op.join(clean_dir, subject, temp_session, "func")
         else:
             preproc_subj_func_dir = op.join(preproc_dir, subject, "func")
             nuis_subj_dir = op.join(clean_dir, subject, "func")

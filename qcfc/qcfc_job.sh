@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=qcfc
-#SBATCH --time=60:00:00
+#SBATCH --time=100:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
@@ -23,19 +23,19 @@ set -e
 source /home/data/abcd/code/abcd_fmriprep-analysis/env/environment
 mriqc_ver=0.16.1
 fmriprep_ver=21.0.0
-afni_ver=20.2.10
+afni_ver=22.0.20
 
-FD_THR=0.2
+FD_THR=0.35
 DSET_DIR="/home/data/abcd/abcd-hispanic-via"
 BIDS_DIR="${DSET_DIR}/dset"
 CODE_DIR="/home/data/abcd/code/abcd_fmriprep-analysis"
 DERIVS_DIR="${BIDS_DIR}/derivatives"
 FMRIPREP_DIR="${DERIVS_DIR}/fmriprep-${fmriprep_ver}"
 MRIQC_DIR="${DERIVS_DIR}/mriqc-${mriqc_ver}"
-# CLEAN_DIR="${DERIVS_DIR}/denoising-${afni_ver}"
-CLEAN_DIR="${DERIVS_DIR}/denoisingFD${FD_THR}-${afni_ver}"
-# QCFC_DIR="${DERIVS_DIR}/qcfc"
-QCFC_DIR="${DERIVS_DIR}/qcfcFD${FD_THR}"
+CLEAN_DIR="${DERIVS_DIR}/denoising-${afni_ver}"
+QCFC_DIR="${DERIVS_DIR}/qcfc"
+# CLEAN_DIR="${DERIVS_DIR}/old/denoisingFD0.2-20.2.10"
+# QCFC_DIR="${DERIVS_DIR}/qcfc-FD020"
 mkdir -p ${QCFC_DIR}
 
 session="ses-baselineYear1Arm1"
@@ -50,7 +50,7 @@ cmd="python ${CODE_DIR}/qcfc/qcfc.py \
     --preproc_dir ${FMRIPREP_DIR} \
     --clean_dir ${CLEAN_DIR} \
     --qcfc_dir ${QCFC_DIR} \
-    --session ${session} \
+    --sessions ${session} \
     --space ${space} \
     --qc_thresh ${FD_THR} \
     --desc_list ${desc_clean} ${desc_sm} \
