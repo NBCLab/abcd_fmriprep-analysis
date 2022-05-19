@@ -116,11 +116,11 @@ def get_acompcor(confounds_file):
         data = json.load(json_file)
     w_comp_cor = sorted([x for x in data.keys() if "w_comp_cor" in x])
     c_comp_cor = sorted([x for x in data.keys() if "c_comp_cor" in x])
-    # for muschelli 2014
+    # from muschelli 2014
     acompcor_list_CSF = [x for x in c_comp_cor if data[x]["Mask"] == "CSF"]
-    acompcor_list_CSF = acompcor_list_CSF[0:3]
+    acompcor_list_CSF = acompcor_list_CSF[0:5]
     acompcor_list_WM = [x for x in w_comp_cor if data[x]["Mask"] == "WM"]
-    acompcor_list_WM = acompcor_list_WM[0:3]
+    acompcor_list_WM = acompcor_list_WM[0:5]
     acompcor_list = []
     acompcor_list.extend(acompcor_list_CSF)
     acompcor_list.extend(acompcor_list_WM)
@@ -129,6 +129,13 @@ def get_acompcor(confounds_file):
     acompcor_arr = confounds_df[acompcor_list].values
 
     return acompcor_arr
+
+
+def get_gsr(confounds_file):
+    confounds_df = pd.read_csv(confounds_file, sep="\t")
+
+    gsr_regressor = confounds_df["global_signal"].values
+    return gsr_regressor
 
 
 def add_outlier(mriqc_dir, prefix):
@@ -142,7 +149,7 @@ def add_outlier(mriqc_dir, prefix):
         new_runs_to_exclude_df = pd.DataFrame()
         new_runs_to_exclude_df["bids_name"] = runs_to_exclude
         new_runs_to_exclude_df.to_csv(
-            op.join(mriqc_dir, f"runs_to_exclude.tsv"), sep="\t", index=False
+            op.join(mriqc_dir, "runs_to_exclude.tsv"), sep="\t", index=False
         )
 
 
@@ -215,6 +222,14 @@ def rsfc_spectrum2metrics(rsfc_fn, mask_fn):
 
 
 def normalize_metric(metric_nifti_file, metric_norm_file, mask_fn):
+    # Remove nans
+    cmd = f"fslmaths \
+                {metric_nifti_file} \
+                -nan \
+                {metric_nifti_file}"
+    print(f"\t\t\t\t{cmd}", flush=True)
+    os.system(cmd)
+
     cmd = f"fslstats {metric_nifti_file} -M"
     print(f"\t\t\t\t{cmd}", flush=True)
     meanMetric = run_command(cmd)
@@ -258,7 +273,8 @@ def run_3dtproject(
         # Create regressor matrix
         motionpar = get_motionpar(confounds_file, derivatives=True)
         acompcor = get_acompcor(confounds_file)
-        nuisance_regressors = np.column_stack((motionpar, acompcor))
+        gsr = get_gsr(confounds_file)
+        nuisance_regressors = np.column_stack((motionpar, acompcor, gsr))
 
         # Some fMRIPrep nuisance regressors have NaN in the first row (e.g., derivatives)
         nuisance_regressors = np.nan_to_num(nuisance_regressors, 0)
@@ -335,7 +351,7 @@ def run_3dtproject(
     reho_afniH_file = f"{reho_file}+tlrc.HEAD"
     reho_afniB_file = f"{reho_file}+tlrc.BRIK"
     reho_nifti_file = f"{reho_file}.nii.gz"
-    if (not op.exists(reho_nifti_file)) and (op.exists(censFilt_file)):
+    if (not op.exists(reho_norm_file)) and (op.exists(censFilt_file)):
         get_reho(censFilt_file, reho_file, mask_file)
         afni2nifti(reho_afniH_file, reho_nifti_file)
         os.remove(reho_afniH_file)
@@ -346,7 +362,8 @@ def run_3dtproject(
 
     # Calculate ALFF, mALFF, fALFF, RSFA, etc.
     metrics = ["ALFF", "FALFF", "FRSFA", "MALFF", "MRSFA", "RSFA"]
-    if (not op.exists(denoised_file)) and (not exclude):
+    fALFF_file = f"{rsfc_norm_file}_FALFF.nii.gz"
+    if (not op.exists(denoised_file)) and (not op.exists(fALFF_file)) and (not exclude):
         nuisance_reg(
             preproc_file,
             dummy_scans,
@@ -357,11 +374,10 @@ def run_3dtproject(
             band_pass=False,
         )
     amp_file = f"{rsfc_file}_amp.nii.gz"
-    if (not op.exists(amp_file)) and (op.exists(denoised_file)):
+    if (not op.exists(amp_file)) and (not op.exists(fALFF_file)) and (op.exists(denoised_file)):
         power_spectrum(denoised_file, rsfc_file, censor_file, mask_file)
         os.remove(denoised_file)
 
-    fALFF_file = f"{rsfc_file}_FALFF.nii.gz"
     if (not op.exists(fALFF_file)) and (op.exists(amp_file)):
         rsfc_spectrum2metrics(rsfc_file, mask_file)
         # Normalize metrics
@@ -390,14 +406,15 @@ def run_3dtproject(
 
         SUFFIXES = {
             "desc-aCompCorCens_bold": (
-                "Denoising with an aCompCor regression model including 3 PCA components from"
-                "WM and 3 from CSF deepest white matter, 6 motion parameters, and first"
-                "temporal derivatives of motion parameters."
+                "Denoising with an aCompCor regression model including 5 PCA components from"
+                "WM and 5 from CSF deepest white matter, 6 motion parameters, and first"
+                "temporal derivatives of motion parameters, and mean GSR."
             ),
             "desc-aCompCorSM6Cens_bold": (
-                "Denoising with an aCompCor regression model including 3 PCA components from"
-                "WM and 3 from CSF deepest white matter, 6 motion parameters, and first"
-                "temporal derivatives of motion parameters. Spatial smoothing was applied."
+                "Denoising with an aCompCor regression model including 5 PCA components from"
+                "WM and 5 from CSF deepest white matter, 6 motion parameters, and first"
+                "temporal derivatives of motion parameters, and mean GSR. "
+                "Spatial smoothing was applied."
             ),
         }
         for suffix, description in SUFFIXES.items():

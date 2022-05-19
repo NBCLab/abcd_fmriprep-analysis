@@ -32,17 +32,17 @@ IMG_DIR="/home/data/abcd/code/singularity-images"
 
 mriqc_ver=0.16.1
 fmriprep_ver=21.0.0
-afni_ver=22.0.18
+afni_ver=22.0.20
 MRIQC_DIR="${DERIVS_DIR}/mriqc-${mriqc_ver}"
 FMRIPREP_DIR="${DERIVS_DIR}/fmriprep-${fmriprep_ver}"
 CLEAN_DIR="${DERIVS_DIR}/denoising-${afni_ver}"
 mkdir -p ${CLEAN_DIR}
 
 
-THISJOBVALUE=${SLURM_ARRAY_TASK_ID}
+# THISJOBVALUE=${SLURM_ARRAY_TASK_ID}
 # Use for array > 1000 elements uncomment the following two lines and comment the previous line
-# VALUES=({1000..1200})
-# THISJOBVALUE=${VALUES[${SLURM_ARRAY_TASK_ID}]}
+VALUES=({1000..1200})
+THISJOBVALUE=${VALUES[${SLURM_ARRAY_TASK_ID}]}
 
 subject=$( sed -n -E "$((${THISJOBVALUE} + 1))s/sub-(\S*)\>.*/\1/gp" ${BIDS_DIR}/participants.tsv )
 session="ses-baselineYear1Arm1"
