@@ -223,16 +223,18 @@ def main(mriqc_dir, clean_dir, rsfc_dir, subject, sessions, space, desc_list, ro
                 roi_subj_timeseries = op.join(
                     rsfc_subj_dir, f"{subj_prefix}_desc-{roi_prefix}_timeseries.txt"
                 )
+                # Average fALFF of each voxel within each ROIs
                 roi_subj_falff = op.join(
                     rsfc_subj_dir, f"{subj_prefix}_desc-{roi_prefix}_FALFF.txt"
                 )
+                # Average ReHo of each voxel within each ROIs
                 roi_subj_reho = op.join(rsfc_subj_dir, f"{subj_prefix}_desc-{roi_prefix}_REHO.txt")
                 if not op.exists(roi_subj_timeseries):
                     ave_timeseries(roi_res, clean_subj_file, roi_subj_timeseries)
                 if not op.exists(roi_subj_falff):
-                    ave_timeseries(roi_res, reho_subj_file, roi_subj_falff)
+                    ave_timeseries(roi_res, falff_subj_file, roi_subj_falff)
                 if not op.exists(roi_subj_reho):
-                    ave_timeseries(roi_res, falff_subj_file, roi_subj_reho)
+                    ave_timeseries(roi_res, reho_subj_file, roi_subj_reho)
 
                 roi_subj_timeseries_df = pd.read_csv(roi_subj_timeseries, header=None)
                 non_zero = len(
