@@ -7,7 +7,7 @@
 #SBATCH --mem-per-cpu=2gb
 #SBATCH --account=iacc_nbc
 #SBATCH --qos=pq_nbc
-#SBATCH --partition=IB_16C_96G
+#SBATCH --partition=IB_40C_512G
 # Outputs ----------------------------------
 #SBATCH --output=/home/data/abcd/abcd-hispanic-via/code/log/%x/%x_%A-%a.out
 #SBATCH --error=/home/data/abcd/abcd-hispanic-via/code/log/%x/%x_%A-%a.err
@@ -27,10 +27,10 @@ fmriprep_ver=21.0.0
 DSET_DIR="/home/data/abcd/abcd-hispanic-via"
 BIDS_DIR="${DSET_DIR}/dset"
 
-THISJOBVALUE=${SLURM_ARRAY_TASK_ID}
+# THISJOBVALUE=${SLURM_ARRAY_TASK_ID}
 # Use for array > 1000 elements uncomment the following two lines and comment the previous line
-# VALUES=({1000..1200})
-# THISJOBVALUE=${VALUES[${SLURM_ARRAY_TASK_ID}]}
+VALUES=({1000..1200})
+THISJOBVALUE=${VALUES[${SLURM_ARRAY_TASK_ID}]}
 
 # Parse the participants.tsv file and extract one subject ID from the line corresponding to this SLURM task.
 subject=$( sed -n -E "$((${THISJOBVALUE} + 1))s/sub-(\S*)\>.*/\1/gp" ${BIDS_DIR}/participants.tsv )
@@ -95,6 +95,7 @@ cmd="${SINGULARITY_CMD} /data \
       --output-spaces MNI152NLin2009cAsym:res-native fsaverage5 \
       --dummy-scans ${dummyscans} \
       --ignore slicetiming \
+      --return-all-components \
       --debug compcor \
       --notrack \
       --no-submm-recon \

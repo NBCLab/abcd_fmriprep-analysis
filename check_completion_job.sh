@@ -21,7 +21,7 @@ set -e
 source /home/data/abcd/code/abcd_fmriprep-analysis/env/environment
 mriqc_ver=0.16.1
 fmriprep_ver=21.0.0
-afni_ver=20.2.10
+afni_ver=22.0.20
 
 DSET_DIR="/home/data/abcd/abcd-hispanic-via"
 BIDS_DIR="${DSET_DIR}/dset"
