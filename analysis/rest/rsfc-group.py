@@ -91,6 +91,14 @@ def _get_parser():
     return parser
 
 
+def afni2nifti(afni_fn, nifti_fn):
+    cmd = f"3dAFNItoNIFTI \
+                -prefix {nifti_fn} \
+                {afni_fn}"
+    print(f"\t\t\t{cmd}", flush=True)
+    os.system(cmd)
+
+
 def conn_resample(roi_in, roi_out, template):
 
     cmd = f"3dresample \
@@ -208,9 +216,9 @@ def append2arg_1sample(subject, subjAve_roi_briks_file, onettest_args_fn):
 def get_setAB(subject, subjAve_roi_briks_file, participants_df, setA, setB):
     sub_df = participants_df[participants_df["participant_id"] == subject]
     brik_id = "{brik}'[0]'".format(brik=subjAve_roi_briks_file)
-    if sub_df["CProb1"].values[0] >= 0.8:
+    if sub_df["CProb1"].values[0] >= 0.7:
         setA.append("{sub_id} {brik_id}\n".format(sub_id=subject, brik_id=brik_id))
-    elif sub_df["CProb2"].values[0] >= 0.8:
+    elif sub_df["CProb2"].values[0] >= 0.7:
         setB.append("{sub_id} {brik_id}\n".format(sub_id=subject, brik_id=brik_id))
     else:
         pass
@@ -230,7 +238,6 @@ def writecov_1sample(onettest_cov_fn):
         "age_p",
         "age_c",
         "site",
-        "FD",
         "education",
         "income",
         "nativity_p",
@@ -238,6 +245,7 @@ def writecov_1sample(onettest_cov_fn):
         "gender_p",
         "gender_c",
     ]
+    # "FD",
     with open(onettest_cov_fn, "w") as fo:
         fo.write("{}\n".format(" ".join(cov_labels)))
 
@@ -262,7 +270,6 @@ def append2cov_1sample(subject, mean_fd, behavioral_df, onettest_cov_fn):
         age_p,
         age_c,
         site,
-        mean_fd,
         education,
         income,
         nativity_p,
@@ -270,16 +277,24 @@ def append2cov_1sample(subject, mean_fd, behavioral_df, onettest_cov_fn):
         gender_p,
         gender_c,
     ]
+    # mean_fd,
     cov_variables_str = [str(x) for x in cov_variables]
     with open(onettest_cov_fn, "a") as fo:
         fo.write("{}\n".format(" ".join(cov_variables_str)))
 
 
 def run_ttest(bucket_fn, mask_fn, covariates_file, args_file, n_jobs):
+    """
+    with open(args_file) as file:
+        arg_list = file.readlines()
+    arg_list_up = [x.replace("\n", "") for x in arg_list]
+    arg_list = " ".join(arg_list_up)
+    """
     cmd = f"3dttest++ -prefix {bucket_fn} \
             -mask {mask_fn} \
             -Covariates {covariates_file} \
             -Clustsim {n_jobs} -@ < {args_file}"
+    # {arg_list}"
     print(f"\t\t{cmd}", flush=True)
     os.system(cmd)
 
@@ -344,7 +359,7 @@ def main(
         f"Outliers. Briks: {len(clean_briks_files)}, Masks: {len(clean_mask_files)}",
         flush=True,
     )
-    if group == "nonFam":
+    if group.startswith("nonFAM"):
         clean_briks_files, clean_mask_files = remove_families(
             participants_df, clean_briks_files, clean_mask_files
         )
@@ -474,6 +489,10 @@ def main(
                     template,
                 )
             subjAve_roi_briks_file = subjAveRes_roi_briks_file
+        if (op.exists(f"{subjAve_roi_briks_file}+tlrc.HEAD")) and (
+            not op.exists(f"{subjAve_roi_briks_file}.nii.gz")
+        ):
+            afni2nifti(f"{subjAve_roi_briks_file}+tlrc.HEAD", f"{subjAve_roi_briks_file}.nii.gz")
 
         # Get subject level mean FD
         mean_fd = subj_mean_fd(preproc_subj_dir, subj_briks_files, subj_mean_fd_file)
@@ -507,9 +526,9 @@ def main(
         roi_dir,
         f"sub-group_{session}_task-rest_desc-2SampletTest{roi}_briks",
     )
-    ttest_briks_files = [twottest_briks_fn, onettest_briks_fn]
+    ttest_briks_files = [onettest_briks_fn, twottest_briks_fn]
     covariates_files = [onettest_cov_fn, onettest_cov_fn]
-    args_files = [twottest_args_fn, onettest_args_fn]
+    args_files = [onettest_args_fn, twottest_args_fn]
 
     for file, ttest_briks_fn in enumerate(ttest_briks_files):
         os.chdir(op.dirname(ttest_briks_fn))
