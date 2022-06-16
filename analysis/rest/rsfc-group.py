@@ -293,7 +293,10 @@ def run_ttest(bucket_fn, mask_fn, covariates_file, args_file, n_jobs):
     cmd = f"3dttest++ -prefix {bucket_fn} \
             -mask {mask_fn} \
             -Covariates {covariates_file} \
-            -Clustsim {n_jobs} -@ < {args_file}"
+            -Clustsim {n_jobs} \
+            -ETAC {n_jobs} \
+            -ETAC_opt NN=2:sid=2:hpow=0:pthr=0.05,0.01,0.005,0.002,0.001:name=etac \
+            -@ < {args_file}"
     # {arg_list}"
     print(f"\t\t{cmd}", flush=True)
     os.system(cmd)

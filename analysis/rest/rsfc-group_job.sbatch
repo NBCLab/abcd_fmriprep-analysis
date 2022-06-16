@@ -1,10 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name=striatum
-#SBATCH --time=50:00:00
+#SBATCH --job-name=hippocampus
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=30
-#SBATCH --mem-per-cpu=1gb
 #SBATCH --account=iacc_nbc
 #SBATCH --qos=pq_nbc
 #SBATCH --partition=IB_40C_512G
@@ -27,7 +25,7 @@ fmriprep_ver=21.0.0
 afni_ver=22.0.20
 
 research_question=RQ2
-seed_region=striatum
+seed_region=hippocampus
 hemis=lh
 DSET_DIR="/home/data/abcd/abcd-hispanic-via"
 BIDS_DIR="${DSET_DIR}/dset"
@@ -43,7 +41,7 @@ TEMPLATE_DIR="/home/data/abcd/abcd-hispanic-via/dset/derivatives/templates"
 template="sub-24x24x24_bucket+tlrc.BRIK"
 template_mask="sub-24x24x24_desc-brain_mask.nii.gz"
 session="ses-baselineYear1Arm1"
-group="nonFAMnonFD"
+group="nonFAMnonFD-etac"
 
 # Run group analysis
 if [[ ${seed_region} ==  "vmPFC" ]]; then
