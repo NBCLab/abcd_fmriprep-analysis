@@ -29,8 +29,18 @@ CLEAN_DIR="${DERIVS_DIR}/denoising-${afni_ver}"
 session="ses-baselineYear1Arm1"
 
 
-# Run denoising pipeline
+# Collect fALFF and ReHo
 completion="python ${CODE_DIR}/collect_metrics.py \
+          --dset ${BIDS_DIR} \
+          --denoising_dir ${CLEAN_DIR}"
+# Setup done, run the command
+echo
+echo Commandline: $completion
+# eval $completion 
+exitcode=$?
+
+# Collect connectivity matrix
+completion="python ${CODE_DIR}/collect_netcc.py \
           --dset ${BIDS_DIR} \
           --denoising_dir ${CLEAN_DIR}"
 # Setup done, run the command
@@ -39,6 +49,5 @@ echo Commandline: $completion
 eval $completion 
 exitcode=$?
 
-exit $exitcode
-
 date
+exit $exitcode
