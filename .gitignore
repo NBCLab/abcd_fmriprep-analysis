@@ -122,5 +122,5 @@ prof/
 
 *.DS_Store
 *.orig
-analysis/task/abcd_extract_eprime
+analysis/task/abcd_extract_eprime/
 analysis/rest/Decon.REML_cmd
