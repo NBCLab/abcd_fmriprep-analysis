@@ -38,7 +38,7 @@ def _get_parser():
 
 def violin_plot(new_df, avg_CSF, avg_WM, avg_comb, mriqc_dir):
     sns.set(style="whitegrid", font_scale=1.5)
-    f, ax = plt.subplots(figsize=(8, 5))
+    _, ax = plt.subplots(figsize=(8, 5))
 
     ort = "v"
     pal = ["#0066ff", "#00cc66", "#ff6600"]
@@ -72,7 +72,7 @@ def violin_plot(new_df, avg_CSF, avg_WM, avg_comb, mriqc_dir):
         zorder=0,
         orient=ort,
     )
-    axe = sns.boxplot(
+    sns.boxplot(
         x=dx,
         y=dy,
         data=new_df,
@@ -88,8 +88,6 @@ def violin_plot(new_df, avg_CSF, avg_WM, avg_comb, mriqc_dir):
         saturation=1,
         orient=ort,
     )
-
-    handles, labels = axe.get_legend_handles_labels()
 
     ax.text(
         0.02,
@@ -150,8 +148,6 @@ def main(
     kn_WM_lst = []
     kn_comb_lst = []
     for confounds_clean_file in confounds_clean_files:
-        # print(f"Processing file {confounds_clean_file}", flush=True)
-
         confounds_json_file = confounds_clean_file.replace(".tsv", ".json")
         with open(confounds_json_file) as json_file:
             data = json.load(json_file)
@@ -196,7 +192,6 @@ def main(
         else:
             kn_comb_lst.append(kn_comb.knee)
 
-    # print(kn_CSF_lst, flush=True)
     avg_CSF = round(mean(kn_CSF_lst))
     avg_WM = round(mean(kn_WM_lst))
     avg_comb = round(mean(kn_comb_lst))

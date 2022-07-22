@@ -116,7 +116,8 @@ def get_acompcor(confounds_file):
         data = json.load(json_file)
     w_comp_cor = sorted([x for x in data.keys() if "w_comp_cor" in x])
     c_comp_cor = sorted([x for x in data.keys() if "c_comp_cor" in x])
-    # from muschelli 2014
+    
+    # From Muschelli 2014
     acompcor_list_CSF = [x for x in c_comp_cor if data[x]["Mask"] == "CSF"]
     acompcor_list_CSF = acompcor_list_CSF[0:5]
     acompcor_list_WM = [x for x in w_comp_cor if data[x]["Mask"] == "WM"]
@@ -222,7 +223,7 @@ def rsfc_spectrum2metrics(rsfc_fn, mask_fn):
 
 
 def normalize_metric(metric_nifti_file, metric_norm_file, mask_fn):
-    # Remove nans
+    # Remove NaNs
     cmd = f"fslmaths \
                 {metric_nifti_file} \
                 -nan \
@@ -257,7 +258,6 @@ def run_3dtproject(
 
     # Determine output files
     denoised_file = op.join(out_dir, f"{prefix}_desc-temp_bold.nii.gz")
-    # cens_file = op.join(out_dir, f"{prefix}_desc-tempCens_bold.nii.gz")
     reho_file = op.join(out_dir, f"{prefix}_desc-REHO_REHO")
     reho_norm_file = op.join(out_dir, f"{prefix}_desc-REHOnorm_REHO.nii.gz")
     rsfc_file = op.join(out_dir, f"{prefix}_desc-RSFC")
@@ -297,8 +297,8 @@ def run_3dtproject(
         tr_censor = pd.read_csv(censor_file, header=None)
         tr_keep = tr_censor.index[tr_censor[0] == 1].tolist()
 
-    exclude = False
     # Add runs with < 100 volumes to outlier file
+    exclude = False
     if len(tr_keep) < 100:
         exclude = True
         run_name = preproc_name.split("_space-")[0]
@@ -356,6 +356,7 @@ def run_3dtproject(
         afni2nifti(reho_afniH_file, reho_nifti_file)
         os.remove(reho_afniH_file)
         os.remove(reho_afniB_file)
+        
         # Add Normalization
         normalize_metric(reho_nifti_file, reho_norm_file, mask_file)
         os.remove(reho_nifti_file)
@@ -380,22 +381,13 @@ def run_3dtproject(
 
     if (not op.exists(fALFF_file)) and (op.exists(amp_file)):
         rsfc_spectrum2metrics(rsfc_file, mask_file)
+
         # Normalize metrics
         for metric in metrics:
             metric_file = f"{rsfc_file}_{metric}.nii.gz"
             metric_norm_file = f"{rsfc_norm_file}_{metric}.nii.gz"
             normalize_metric(metric_file, metric_norm_file, mask_file)
             os.remove(metric_file)
-
-    """
-    if (op.exists(denoised_file)) and (not op.exists(cens_file)):
-        cmd = f"3dTcat -prefix {cens_file} {denoised_file}'{tr_keep}'"
-        print(f"\t\t{cmd}", flush=True)
-        os.system(cmd)
-        os.remove(denoised_file)
-    if op.exists(cens_file):
-        rsfc_metrics(cens_file, rsfc_file, mask_file)
-    """
 
     # Create json files with Sources and Description fields
     # Load metadata for writing out later and TR now

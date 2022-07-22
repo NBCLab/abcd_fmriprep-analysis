@@ -33,10 +33,10 @@ IMG_DIR="/home/data/abcd/code/singularity-images"
 afni_ver=22.0.20
 CLEAN_DIR="${DERIVS_DIR}/denoising-${afni_ver}"
 
-# THISJOBVALUE=${SLURM_ARRAY_TASK_ID}
+THISJOBVALUE=${SLURM_ARRAY_TASK_ID}
 # Use for array > 1000 elements uncomment the following two lines and comment the previous line
-VALUES=({1000..1200})
-THISJOBVALUE=${VALUES[${SLURM_ARRAY_TASK_ID}]}
+# VALUES=({1000..1200})
+# THISJOBVALUE=${VALUES[${SLURM_ARRAY_TASK_ID}]}
 
 subject=$( sed -n -E "$((${THISJOBVALUE} + 1))s/sub-(\S*)\>.*/\1/gp" ${BIDS_DIR}/participants.tsv )
 

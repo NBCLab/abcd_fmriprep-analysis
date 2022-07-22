@@ -251,6 +251,7 @@ def writecov_1sample(onettest_cov_fn):
 
 
 def append2cov_1sample(subject, mean_fd, behavioral_df, onettest_cov_fn):
+    # TODO: This function need to be generalized
     site_dict = {site: i for i, site in enumerate(behavioral_df["site_id_l"].unique())}
     sub_df = behavioral_df[
         behavioral_df["subjectkey"] == "NDAR_{}".format(subject.split("sub-NDAR")[1])
@@ -284,12 +285,6 @@ def append2cov_1sample(subject, mean_fd, behavioral_df, onettest_cov_fn):
 
 
 def run_ttest(bucket_fn, mask_fn, covariates_file, args_file, n_jobs):
-    """
-    with open(args_file) as file:
-        arg_list = file.readlines()
-    arg_list_up = [x.replace("\n", "") for x in arg_list]
-    arg_list = " ".join(arg_list_up)
-    """
     cmd = f"3dttest++ -prefix {bucket_fn} \
             -mask {mask_fn} \
             -Covariates {covariates_file} \
@@ -297,7 +292,6 @@ def run_ttest(bucket_fn, mask_fn, covariates_file, args_file, n_jobs):
             -ETAC {n_jobs} \
             -ETAC_opt NN=2:sid=2:hpow=0:pthr=0.05,0.01,0.005,0.002,0.001:name=etac \
             -@ < {args_file}"
-    # {arg_list}"
     print(f"\t\t{cmd}", flush=True)
     os.system(cmd)
 
@@ -334,10 +328,8 @@ def main(
 
     # Define directories
     if session is not None:
-        # preproc_subjs_dir = op.join(preproc_dir, "*", session, "func")
         rsfc_subjs_dir = op.join(rsfc_dir, "*", session, "func")
     else:
-        # preproc_subjs_dir = op.join(preproc_dir, "*", "func")
         rsfc_subjs_dir = op.join(rsfc_dir, "*", "func")
 
     rsfc_group_dir = op.join(rsfc_dir, f"group-{group}")
@@ -379,10 +371,6 @@ def main(
         flush=True,
     )
     assert len(clean_briks_files) == len(clean_mask_files)
-    # clean_briks_nm = [op.basename(x).split("_space-")[0] for x in clean_briks_files]
-    # clean_mask_nm = [op.basename(x).split("_space-")[0] for x in clean_mask_files]
-    # clean_briks_tpl = tuple(clean_briks_nm)
-    # mask_not_brik = [x for x in clean_mask_nm if not x.startswith(clean_briks_tpl)]
 
     # Write group file
     clean_briks_fn = op.join(
@@ -420,6 +408,7 @@ def main(
 
     roi_dir = op.join(rsfc_group_dir, roi)
     os.makedirs(roi_dir, exist_ok=True)
+
     # Conform onettest_args_fn and twottest_args_fn
     onettest_args_fn = op.join(
         roi_dir, f"sub-group_{session}_task-rest_desc-1SampletTest{roi}_args.txt"
@@ -437,8 +426,6 @@ def main(
     if not op.exists(onettest_cov_fn):
         writecov_1sample(onettest_cov_fn)
 
-    setA = []
-    setB = []
     # Calculate subject and ROI level average connectivity
     subjects = [op.basename(x).split("_")[0] for x in clean_briks_files]
     subjects = list(set(subjects))
@@ -456,6 +443,8 @@ def main(
     else:
         assert image.load_img(template).shape[0] == 81
 
+    setA = []
+    setB = []
     for subject in subjects:
         rsfc_subj_dir = op.join(rsfc_dir, subject, session, "func")
         preproc_subj_dir = op.join(preproc_dir, subject, session, "func")

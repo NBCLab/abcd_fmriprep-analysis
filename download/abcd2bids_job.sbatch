@@ -42,7 +42,6 @@ sub=${subjects[${SLURM_ARRAY_TASK_ID}]}
 
 echo "Processing ${sub}"
 SCRATCH_DIR="/scratch/nbc/jpera054/abcd_work/abcd2bids/${sub}"
-# SCRATCH_DIR="/home/data/abcd/abcd-hispanic-via/scratch/abcd2bids/${sub}"
 mkdir -p ${SCRATCH_DIR}/spreadsheets
 log_file=${LOG_DIR}/${sub}_dcm2bids
 
@@ -73,7 +72,7 @@ echo "sub-$sub   ${SLURM_ARRAY_TASK_ID}    $exitcode" \
       >> ${DSET_DIR}/code/log/${SLURM_JOB_NAME}/${SLURM_JOB_NAME}.${SLURM_ARRAY_JOB_ID}.tsv
 echo Finished tasks ${SLURM_ARRAY_TASK_ID} with exit code $exitcode
 rm -rf ${SCRATCH_DIR}
-# rm -rf ${RAW_DIR}/${sub}
+
 date
 
 exit $exitcode
