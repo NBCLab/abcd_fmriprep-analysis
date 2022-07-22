@@ -34,8 +34,6 @@ FMRIPREP_DIR="${DERIVS_DIR}/fmriprep-${fmriprep_ver}"
 MRIQC_DIR="${DERIVS_DIR}/mriqc-${mriqc_ver}"
 CLEAN_DIR="${DERIVS_DIR}/denoising-${afni_ver}"
 QCFC_DIR="${DERIVS_DIR}/qcfc"
-# CLEAN_DIR="${DERIVS_DIR}/old/denoisingFD0.2-20.2.10"
-# QCFC_DIR="${DERIVS_DIR}/qcfc-FD020"
 mkdir -p ${QCFC_DIR}
 
 session="ses-baselineYear1Arm1"

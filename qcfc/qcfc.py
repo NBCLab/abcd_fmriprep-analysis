@@ -276,7 +276,7 @@ def main(
             ]
         )
 
-    # TO-DO Use the exlcue from MRIQC here !!!!!!!!!!!!!!!!!!!!!!!!!!
+    # TODO: Use the exlcue from MRIQC here !!!!!!!!!!!!!!!!!!!!!!!!!!
     # runs_to_exclude_df = pd.read_csv(op.join(mriqc_dir, "runs_to_exclude_qcfc.tsv"), sep="\t")
     runs_to_exclude_df = pd.read_csv(op.join(mriqc_dir, "runs_to_exclude_qcfc.tsv"), sep="\t")
     runs_to_exclude = runs_to_exclude_df["bids_name"].tolist()
