@@ -5,7 +5,7 @@ Download ABCD MRI data convert the DICOM data to BIDS format, preprocess the BID
 `download/` contains scripts to download ABCD magnetic resonance imaging (MRI) data and convert the DICOM data organization to fit the Brain Imaging Data Structure (BIDS) specification. 
 The main scripts contit of (1) `abcddownload_job.sh`, which downloads the DICOM data, and (2) `abcd2bids_job.sbatch`, which unpack the downloaded data, and converts it to BIDS format. 
 
-These scripts made use of a modified version of the [abcd-dicom2bids](https://github.com/DCAN-Labs/abcd-dicom2bids) repository. We generated a [Docker image](https://hub.docker.com/repository/docker/julioaperaza/abcddicom2bids) of our [modified version](https://github.com/JulioAPeraza/abcd-dicom2bids), which was then converted to a Singularity image on FIU’s High Performance Cluster (HPC).
+These scripts made use of a modified version of the [abcd-dicom2bids](https://github.com/DCAN-Labs/abcd-dicom2bids) repository. We generated a [Docker image](https://hub.docker.com/r/julioaperaza/abcddicom2bids) of our [modified version](https://github.com/JulioAPeraza/abcd-dicom2bids), which was then converted to a Singularity image on FIU’s High Performance Cluster (HPC).
 
 ## MRI Quality Control
 `mriqc/` contains scripts to run MRIQC 0.16.1 (Esteban et al., 2017), a BIDS-App that computes quality control (QC) measures.
